@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/project-format" },
+    { "path": "./packages/store" },
+    { "path": "./packages/cli" }
+  ]
+}
+

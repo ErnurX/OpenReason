@@ -1,0 +1,1093 @@
+{
+  "$id": "https://reasoning-workbench.org/schemas/0.1.0/known-event.schema.json",
+  "title": "Reasoning Workbench known-event schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "eventType": {
+          "type": "string",
+          "const": "ProjectInitialized"
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^(?:prj)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "branchId": {
+          "type": "string",
+          "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "actor": {
+          "type": "object",
+          "properties": {
+            "actorType": {
+              "type": "string",
+              "enum": [
+                "human",
+                "agent",
+                "tool",
+                "system"
+              ]
+            },
+            "actorId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "actorType",
+            "actorId"
+          ],
+          "additionalProperties": {}
+        },
+        "causationId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^(?:job)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "previousEventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "formatVersion": {
+              "default": "0.1.0",
+              "type": "string",
+              "pattern": "^0\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+            },
+            "defaultBranchId": {
+              "type": "string",
+              "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            },
+            "createdAt": {
+              "type": "string",
+              "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+            }
+          },
+          "required": [
+            "title",
+            "defaultBranchId"
+          ],
+          "additionalProperties": {}
+        },
+        "eventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventId",
+        "eventType",
+        "occurredAt",
+        "projectId",
+        "actor",
+        "schemaVersion",
+        "payload",
+        "eventHash"
+      ],
+      "additionalProperties": {}
+    },
+    {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "eventType": {
+          "type": "string",
+          "const": "BranchCreated"
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^(?:prj)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "branchId": {
+          "type": "string",
+          "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "actor": {
+          "type": "object",
+          "properties": {
+            "actorType": {
+              "type": "string",
+              "enum": [
+                "human",
+                "agent",
+                "tool",
+                "system"
+              ]
+            },
+            "actorId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "actorType",
+            "actorId"
+          ],
+          "additionalProperties": {}
+        },
+        "causationId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^(?:job)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "previousEventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "branchId": {
+              "type": "string",
+              "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "baseBranchId": {
+              "type": "string",
+              "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "branchId",
+            "name"
+          ],
+          "additionalProperties": {}
+        },
+        "eventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventId",
+        "eventType",
+        "occurredAt",
+        "projectId",
+        "actor",
+        "schemaVersion",
+        "payload",
+        "eventHash"
+      ],
+      "additionalProperties": {}
+    },
+    {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "eventType": {
+          "type": "string",
+          "const": "ObjectVersionCreated"
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^(?:prj)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "branchId": {
+          "type": "string",
+          "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "actor": {
+          "type": "object",
+          "properties": {
+            "actorType": {
+              "type": "string",
+              "enum": [
+                "human",
+                "agent",
+                "tool",
+                "system"
+              ]
+            },
+            "actorId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "actorType",
+            "actorId"
+          ],
+          "additionalProperties": {}
+        },
+        "causationId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^(?:job)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "previousEventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "object": {
+              "type": "object",
+              "properties": {
+                "objectId": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "objectType": {
+                  "type": "string",
+                  "enum": [
+                    "problem",
+                    "goal",
+                    "context",
+                    "definition",
+                    "assumption",
+                    "claim",
+                    "evidence",
+                    "source",
+                    "run",
+                    "artifact",
+                    "review",
+                    "decision",
+                    "failure",
+                    "branch",
+                    "workstream",
+                    "document",
+                    "environment",
+                    "alignment"
+                  ]
+                },
+                "versionId": {
+                  "type": "string",
+                  "pattern": "^(?:ver)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "type": "string",
+                  "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+                },
+                "createdBy": {
+                  "type": "object",
+                  "properties": {
+                    "actorType": {
+                      "type": "string",
+                      "enum": [
+                        "human",
+                        "agent",
+                        "tool",
+                        "system"
+                      ]
+                    },
+                    "actorId": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                    }
+                  },
+                  "required": [
+                    "actorType",
+                    "actorId"
+                  ],
+                  "additionalProperties": {}
+                },
+                "branchId": {
+                  "type": "string",
+                  "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "content": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                },
+                "contentHash": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                },
+                "supersedesVersionId": {
+                  "type": "string",
+                  "pattern": "^(?:ver)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                }
+              },
+              "required": [
+                "objectId",
+                "objectType",
+                "versionId",
+                "version",
+                "createdAt",
+                "createdBy",
+                "branchId",
+                "content",
+                "contentHash"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "object"
+          ],
+          "additionalProperties": {}
+        },
+        "eventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventId",
+        "eventType",
+        "occurredAt",
+        "projectId",
+        "actor",
+        "schemaVersion",
+        "payload",
+        "eventHash"
+      ],
+      "additionalProperties": {}
+    },
+    {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "eventType": {
+          "type": "string",
+          "const": "EdgeCreated"
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^(?:prj)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "branchId": {
+          "type": "string",
+          "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "actor": {
+          "type": "object",
+          "properties": {
+            "actorType": {
+              "type": "string",
+              "enum": [
+                "human",
+                "agent",
+                "tool",
+                "system"
+              ]
+            },
+            "actorId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "actorType",
+            "actorId"
+          ],
+          "additionalProperties": {}
+        },
+        "causationId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^(?:job)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "previousEventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "edge": {
+              "type": "object",
+              "properties": {
+                "edgeId": {
+                  "type": "string",
+                  "pattern": "^(?:edg)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "edgeType": {
+                  "type": "string",
+                  "enum": [
+                    "depends_on",
+                    "uses_definition",
+                    "supports",
+                    "refutes",
+                    "derived_from",
+                    "tested_by",
+                    "formalizes",
+                    "cites",
+                    "produced_by",
+                    "contradicts",
+                    "supersedes"
+                  ]
+                },
+                "from": {
+                  "type": "object",
+                  "properties": {
+                    "objectId": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                    },
+                    "versionId": {
+                      "type": "string",
+                      "pattern": "^(?:ver)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                    }
+                  },
+                  "required": [
+                    "objectId",
+                    "versionId"
+                  ],
+                  "additionalProperties": {}
+                },
+                "to": {
+                  "type": "object",
+                  "properties": {
+                    "objectId": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                    },
+                    "versionId": {
+                      "type": "string",
+                      "pattern": "^(?:ver)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                    }
+                  },
+                  "required": [
+                    "objectId",
+                    "versionId"
+                  ],
+                  "additionalProperties": {}
+                },
+                "contextId": {
+                  "type": "string",
+                  "pattern": "^(?:ctx)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+                },
+                "createdBy": {
+                  "type": "object",
+                  "properties": {
+                    "actorType": {
+                      "type": "string",
+                      "enum": [
+                        "human",
+                        "agent",
+                        "tool",
+                        "system"
+                      ]
+                    },
+                    "actorId": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                    }
+                  },
+                  "required": [
+                    "actorType",
+                    "actorId"
+                  ],
+                  "additionalProperties": {}
+                },
+                "metadata": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              },
+              "required": [
+                "edgeId",
+                "edgeType",
+                "from",
+                "to",
+                "createdAt",
+                "createdBy",
+                "metadata"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "edge"
+          ],
+          "additionalProperties": {}
+        },
+        "eventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventId",
+        "eventType",
+        "occurredAt",
+        "projectId",
+        "actor",
+        "schemaVersion",
+        "payload",
+        "eventHash"
+      ],
+      "additionalProperties": {}
+    },
+    {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "eventType": {
+          "type": "string",
+          "const": "ArtifactRegistered"
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^(?:prj)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "branchId": {
+          "type": "string",
+          "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "actor": {
+          "type": "object",
+          "properties": {
+            "actorType": {
+              "type": "string",
+              "enum": [
+                "human",
+                "agent",
+                "tool",
+                "system"
+              ]
+            },
+            "actorId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "actorType",
+            "actorId"
+          ],
+          "additionalProperties": {}
+        },
+        "causationId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^(?:job)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "previousEventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "artifact": {
+              "type": "object",
+              "properties": {
+                "artifactId": {
+                  "type": "string",
+                  "pattern": "^(?:art)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                },
+                "mediaType": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "size": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "logicalName": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "producedByRunId": {
+                  "type": "string",
+                  "pattern": "^(?:run)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "environmentId": {
+                  "type": "string",
+                  "pattern": "^(?:env)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+                },
+                "inputs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  }
+                },
+                "reproducibility": {
+                  "type": "string",
+                  "enum": [
+                    "deterministic",
+                    "seeded",
+                    "nondeterministic",
+                    "externally-sourced"
+                  ]
+                }
+              },
+              "required": [
+                "artifactId",
+                "digest",
+                "mediaType",
+                "size",
+                "logicalName",
+                "producedByRunId",
+                "environmentId",
+                "inputs",
+                "reproducibility"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "artifact"
+          ],
+          "additionalProperties": {}
+        },
+        "eventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventId",
+        "eventType",
+        "occurredAt",
+        "projectId",
+        "actor",
+        "schemaVersion",
+        "payload",
+        "eventHash"
+      ],
+      "additionalProperties": {}
+    },
+    {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "eventType": {
+          "type": "string",
+          "const": "BranchMerged"
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^(?:prj)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "branchId": {
+          "type": "string",
+          "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "actor": {
+          "type": "object",
+          "properties": {
+            "actorType": {
+              "type": "string",
+              "enum": [
+                "human",
+                "agent",
+                "tool",
+                "system"
+              ]
+            },
+            "actorId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "actorType",
+            "actorId"
+          ],
+          "additionalProperties": {}
+        },
+        "causationId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^(?:job)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "previousEventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "mergeId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            },
+            "sourceBranchId": {
+              "type": "string",
+              "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            },
+            "targetBranchId": {
+              "type": "string",
+              "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            },
+            "baseSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "sourceHeadSequence": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "targetHeadSequenceBefore": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "strategy": {
+              "type": "string",
+              "const": "safe"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "merged",
+                "conflicted"
+              ]
+            },
+            "appliedObjectVersionIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(?:ver)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+              }
+            },
+            "adoptedEdgeIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(?:edg)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+              }
+            },
+            "conflictObjectIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+              }
+            }
+          },
+          "required": [
+            "mergeId",
+            "sourceBranchId",
+            "targetBranchId",
+            "baseSequence",
+            "sourceHeadSequence",
+            "targetHeadSequenceBefore",
+            "strategy",
+            "status",
+            "appliedObjectVersionIds",
+            "adoptedEdgeIds",
+            "conflictObjectIds"
+          ],
+          "additionalProperties": {}
+        },
+        "eventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventId",
+        "eventType",
+        "occurredAt",
+        "projectId",
+        "actor",
+        "schemaVersion",
+        "payload",
+        "eventHash"
+      ],
+      "additionalProperties": {}
+    },
+    {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "eventId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "eventType": {
+          "type": "string",
+          "const": "MigrationApplied"
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{3}))?Z$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^(?:prj)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "branchId": {
+          "type": "string",
+          "pattern": "^(?:br)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "actor": {
+          "type": "object",
+          "properties": {
+            "actorType": {
+              "type": "string",
+              "enum": [
+                "human",
+                "agent",
+                "tool",
+                "system"
+              ]
+            },
+            "actorId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            }
+          },
+          "required": [
+            "actorType",
+            "actorId"
+          ],
+          "additionalProperties": {}
+        },
+        "causationId": {
+          "type": "string",
+          "pattern": "^(?:evt)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^(?:job)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+        },
+        "previousEventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "migrationId": {
+              "type": "string",
+              "pattern": "^(?:mig)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+            },
+            "fromFormatVersion": {
+              "type": "string",
+              "pattern": "^0\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+            },
+            "toFormatVersion": {
+              "type": "string",
+              "pattern": "^0\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+            }
+          },
+          "required": [
+            "migrationId",
+            "fromFormatVersion",
+            "toFormatVersion"
+          ],
+          "additionalProperties": {}
+        },
+        "eventHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "sequence",
+        "eventId",
+        "eventType",
+        "occurredAt",
+        "projectId",
+        "actor",
+        "schemaVersion",
+        "payload",
+        "eventHash"
+      ],
+      "additionalProperties": {}
+    }
+  ],
+  "$defs": {
+    "__schema0": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      ]
+    }
+  }
+}

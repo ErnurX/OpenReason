@@ -1,0 +1,26 @@
+{
+  "$id": "https://reasoning-workbench.org/schemas/0.1.0/actor.schema.json",
+  "title": "Reasoning Workbench actor schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "actorType": {
+      "type": "string",
+      "enum": [
+        "human",
+        "agent",
+        "tool",
+        "system"
+      ]
+    },
+    "actorId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]{1,11}_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+    }
+  },
+  "required": [
+    "actorType",
+    "actorId"
+  ],
+  "additionalProperties": {}
+}

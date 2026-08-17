@@ -1,0 +1,65 @@
+{
+  "$id": "https://reasoning-workbench.org/schemas/0.1.0/artifact.schema.json",
+  "title": "Reasoning Workbench artifact schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "artifactId": {
+      "type": "string",
+      "pattern": "^(?:art)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "mediaType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "logicalName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producedByRunId": {
+      "type": "string",
+      "pattern": "^(?:run)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+    },
+    "environmentId": {
+      "type": "string",
+      "pattern": "^(?:env)_(?:[0-7][0-9A-HJKMNP-TV-Z]{25}|[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^sha256:[0-9a-f]{64}$"
+      }
+    },
+    "reproducibility": {
+      "type": "string",
+      "enum": [
+        "deterministic",
+        "seeded",
+        "nondeterministic",
+        "externally-sourced"
+      ]
+    }
+  },
+  "required": [
+    "artifactId",
+    "digest",
+    "mediaType",
+    "size",
+    "logicalName",
+    "producedByRunId",
+    "environmentId",
+    "inputs",
+    "reproducibility"
+  ],
+  "additionalProperties": {}
+}

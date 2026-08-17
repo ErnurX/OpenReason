@@ -1,0 +1,28 @@
+{
+  "name": "openreason",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "schemas": "node --import tsx scripts/generate-json-schemas.ts",
+    "schemas:check": "node --import tsx scripts/generate-json-schemas.ts --check",
+    "rw": "node --import tsx packages/cli/src/index.ts",
+    "validate:stage0": "python3 scripts/validate_stage0.py",
+    "check": "pnpm run typecheck && pnpm run schemas:check && pnpm run test && pnpm run validate:stage0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "formatVersion": "0.1.0",
+  "schemas": [
+    "actor.schema.json",
+    "artifact.schema.json",
+    "edge.schema.json",
+    "event.schema.json",
+    "known-event.schema.json",
+    "object.schema.json",
+    "manifest.schema.json"
+  ]
+}
