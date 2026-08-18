@@ -43,6 +43,7 @@ export interface ParsedArguments {
 
 export const BOOLEAN_OPTIONS = new Set([
   "help",
+  "human",
   "json",
   "require-tool-use",
   "unsafe-process-only",
@@ -111,6 +112,19 @@ export function positional(
 
 export function outputJson(io: CliIo, value: unknown): void {
   io.stdout(`${JSON.stringify(value, null, 2)}\n`);
+}
+
+export function outputFormatted<T>(
+  parsed: ParsedArguments,
+  io: CliIo,
+  value: T,
+  formatHuman?: (value: T) => string,
+): void {
+  if (parsed.options.has("human") && formatHuman !== undefined) {
+    io.stdout(`${formatHuman(value)}\n`);
+  } else {
+    outputJson(io, value);
+  }
 }
 
 export function asJsonObject(text: string, label: string): Record<string, unknown> {

@@ -10,12 +10,17 @@ import {
 } from "@reasoning-workbench/store";
 
 import {
+  formatWorkstreamList,
+  formatWorkstreamStatus,
+} from "../formatters/human.js";
+import {
   capabilitiesOption,
   cliToolRegistry,
   commaSeparated,
   integerOption,
   nonNegativeInteger,
   option,
+  outputFormatted,
   outputJson,
   positional,
   readJsonValue,
@@ -75,21 +80,17 @@ export async function handleWorkstreamCommand(
   }
 
   if (subCommand === "list") {
-    outputJson(
-      io,
-      listWorkstreams(positional(parsed, 2, "project directory")),
-    );
+    const workstreams = listWorkstreams(positional(parsed, 2, "project directory"));
+    outputFormatted(parsed, io, workstreams, formatWorkstreamList);
     return 0;
   }
 
   if (subCommand === "status") {
-    outputJson(
-      io,
-      getWorkstream(
-        positional(parsed, 2, "project directory"),
-        positional(parsed, 3, "workstream ID"),
-      ),
+    const workstream = getWorkstream(
+      positional(parsed, 2, "project directory"),
+      positional(parsed, 3, "workstream ID"),
     );
+    outputFormatted(parsed, io, workstream, formatWorkstreamStatus);
     return 0;
   }
 

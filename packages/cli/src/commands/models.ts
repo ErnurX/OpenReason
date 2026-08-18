@@ -5,11 +5,16 @@ import {
 } from "@reasoning-workbench/store";
 
 import {
+  formatModelRoute,
+  formatModelUsage,
+} from "../formatters/human.js";
+import {
   commaSeparated,
   configuredModel,
   configuredRegistry,
   nonNegativeInteger,
   option,
+  outputFormatted,
   outputJson,
   positional,
   resolveBranchId,
@@ -65,7 +70,7 @@ export async function handleModelsCommand(
       throw new Error(`--modality must contain only ${knownModalities.join(", ")}`);
     }
     const maxCostText = option(parsed, "max-cost-micros");
-    outputJson(io, registry.route({
+    const route = registry.route({
       task: task as ModelTaskType,
       estimatedInputTokens: nonNegativeInteger(
         option(parsed, "input-tokens", true)!,
@@ -84,19 +89,18 @@ export async function handleModelsCommand(
       ...(maxCostText === undefined
         ? {}
         : { maxEstimatedCostMicros: nonNegativeInteger(maxCostText, "--max-cost-micros") }),
-    }));
+    });
+    outputFormatted(parsed, io, route, formatModelRoute);
     return 0;
   }
 
   if (subCommand === "usage") {
     const projectRoot = positional(parsed, 2, "project directory");
-    outputJson(
-      io,
-      inspectModelUsage(
-        projectRoot,
-        await resolveBranchId(projectRoot, option(parsed, "branch")),
-      ),
+    const usage = inspectModelUsage(
+      projectRoot,
+      await resolveBranchId(projectRoot, option(parsed, "branch")),
     );
+    outputFormatted(parsed, io, usage, formatModelUsage);
     return 0;
   }
 

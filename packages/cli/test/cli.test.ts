@@ -914,4 +914,53 @@ describe("Reasoning Workbench CLI", () => {
       "Unknown command",
     );
   });
+
+  it("formats human-readable output when --human is passed", async () => {
+    const root = await temporaryRoot();
+    const projectRoot = join(root, "rp001");
+
+    const fixture = await runJson(["fixture", "rp001", projectRoot]);
+    const contextId = (fixture.output as Record<string, unknown>).contextId as string;
+
+    // Test info --human
+    const infoIo = captureIo();
+    expect(await runCli(["info", projectRoot, "--human"], infoIo)).toBe(0);
+    expect(infoIo.stdoutText()).toContain("Project:");
+    expect(infoIo.stdoutText()).toContain("Project ID:");
+    expect(infoIo.stdoutText()).toContain("Branches");
+
+    // Test history --human
+    const historyIo = captureIo();
+    expect(await runCli(["history", projectRoot, "--human"], historyIo)).toBe(0);
+    expect(historyIo.stdoutText()).toContain("Project History");
+
+    // Test graph query --human
+    const graphIo = captureIo();
+    expect(await runCli(["graph", "query", projectRoot, "--human"], graphIo)).toBe(0);
+    expect(graphIo.stdoutText()).toContain("Graph Query:");
+    expect(graphIo.stdoutText()).toContain("Objects:");
+
+    // Test tools list --human
+    const toolsIo = captureIo();
+    expect(await runCli(["tools", "list", "--human"], toolsIo)).toBe(0);
+    expect(toolsIo.stdoutText()).toContain("Available Execution Tools");
+
+    // Test staleness --human
+    const stalenessIo = captureIo();
+    expect(
+      await runCli(
+        ["staleness", projectRoot, "--changed", contextId, "--human"],
+        stalenessIo,
+      ),
+    ).toBe(0);
+    expect(stalenessIo.stdoutText()).toContain("Staleness Report:");
+
+    // Test workstream list --human
+    const workstreamIo = captureIo();
+    expect(
+      await runCli(["workstream", "list", projectRoot, "--human"], workstreamIo),
+    ).toBe(0);
+    expect(workstreamIo.stdoutText()).toContain("Workstreams");
+  });
 });
+

@@ -9,7 +9,12 @@ import {
 } from "@reasoning-workbench/store";
 
 import {
+  formatProjectHistory,
+  formatProjectInfo,
+} from "../formatters/human.js";
+import {
   option,
+  outputFormatted,
   outputJson,
   positional,
   type CliIo,
@@ -32,12 +37,22 @@ export async function handleProjectCommand(
   }
 
   if (command === "info") {
-    outputJson(io, await inspectProject(positional(parsed, 1, "project directory")));
+    outputFormatted(
+      parsed,
+      io,
+      await inspectProject(positional(parsed, 1, "project directory")),
+      formatProjectInfo,
+    );
     return 0;
   }
 
   if (command === "history") {
-    outputJson(io, await projectHistory(positional(parsed, 1, "project directory")));
+    outputFormatted(
+      parsed,
+      io,
+      await projectHistory(positional(parsed, 1, "project directory")),
+      formatProjectHistory,
+    );
     return 0;
   }
 

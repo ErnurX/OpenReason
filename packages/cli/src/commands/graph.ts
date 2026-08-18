@@ -11,12 +11,19 @@ import {
 } from "@reasoning-workbench/store";
 
 import {
+  formatGraphQuery,
+  formatGraphTraverse,
+  formatImpact,
+  formatStaleness,
+} from "../formatters/human.js";
+import {
   commaSeparated,
   edgeTypesOption,
   integerOption,
   nonNegativeInteger,
   objectTypesOption,
   option,
+  outputFormatted,
   outputJson,
   positional,
   resolveBranchId,
@@ -34,17 +41,15 @@ export async function handleGraphCommand(
     const projectRoot = positional(parsed, 2, "project directory");
     const objectTypes = objectTypesOption(option(parsed, "object-type"));
     const edgeTypes = edgeTypesOption(option(parsed, "edge-type"));
-    outputJson(
-      io,
-      queryGraph(projectRoot, {
-        branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
-        ...(objectTypes === undefined ? {} : { objectTypes }),
-        ...(edgeTypes === undefined ? {} : { edgeTypes }),
-        ...(option(parsed, "context") === undefined
-          ? {}
-          : { contextId: option(parsed, "context")! }),
-      }),
-    );
+    const result = queryGraph(projectRoot, {
+      branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
+      ...(objectTypes === undefined ? {} : { objectTypes }),
+      ...(edgeTypes === undefined ? {} : { edgeTypes }),
+      ...(option(parsed, "context") === undefined
+        ? {}
+        : { contextId: option(parsed, "context")! }),
+    });
+    outputFormatted(parsed, io, result, formatGraphQuery);
     return 0;
   }
 
@@ -58,21 +63,19 @@ export async function handleGraphCommand(
     }
     const edgeTypes = edgeTypesOption(option(parsed, "edge-type"));
     const maxDepthText = option(parsed, "max-depth");
-    outputJson(
-      io,
-      traverseGraph(projectRoot, {
-        branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
-        startObjectIds: commaSeparated(
-          option(parsed, "start", true)!,
-          "--start",
-        ),
-        direction: direction as "upstream" | "downstream" | "both",
-        ...(edgeTypes === undefined ? {} : { edgeTypes }),
-        ...(maxDepthText === undefined
-          ? {}
-          : { maxDepth: nonNegativeInteger(maxDepthText, "--max-depth") }),
-      }),
-    );
+    const result = traverseGraph(projectRoot, {
+      branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
+      startObjectIds: commaSeparated(
+        option(parsed, "start", true)!,
+        "--start",
+      ),
+      direction: direction as "upstream" | "downstream" | "both",
+      ...(edgeTypes === undefined ? {} : { edgeTypes }),
+      ...(maxDepthText === undefined
+        ? {}
+        : { maxDepth: nonNegativeInteger(maxDepthText, "--max-depth") }),
+    });
+    outputFormatted(parsed, io, result, formatGraphTraverse);
     return 0;
   }
 
@@ -85,12 +88,21 @@ export async function handleGraphCommand(
         "--changed",
       ),
     };
-    outputJson(
-      io,
-      command === "impact"
-        ? computeImpact(projectRoot, options)
-        : deriveStaleness(projectRoot, options),
-    );
+    if (command === "impact") {
+      outputFormatted(
+        parsed,
+        io,
+        computeImpact(projectRoot, options),
+        formatImpact,
+      );
+    } else {
+      outputFormatted(
+        parsed,
+        io,
+        deriveStaleness(projectRoot, options),
+        formatStaleness,
+      );
+    }
     return 0;
   }
 

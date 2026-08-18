@@ -6,8 +6,13 @@ import {
 } from "@reasoning-workbench/store";
 
 import {
+  formatPaperImpact,
+  formatPaperInspect,
+} from "../formatters/human.js";
+import {
   commaSeparated,
   option,
+  outputFormatted,
   outputJson,
   positional,
   readJsonValue,
@@ -39,7 +44,7 @@ export async function handlePaperCommand(
     return 0;
   }
 
-  if (subCommand === "render" || subCommand === "inspect") {
+  if (subCommand === "render") {
     const projectRoot = positional(parsed, 2, "project directory");
     const options = {
       branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
@@ -55,31 +60,42 @@ export async function handlePaperCommand(
     }
     outputJson(
       io,
-      subCommand === "render"
-        ? renderWorkingPaper(projectRoot, {
-            ...options,
-            ...(format === undefined
-              ? {}
-              : { format: format as "markdown" | "latex" }),
-          })
-        : inspectWorkingPaper(projectRoot, options),
+      renderWorkingPaper(projectRoot, {
+        ...options,
+        ...(format === undefined
+          ? {}
+          : { format: format as "markdown" | "latex" }),
+      }),
+    );
+    return 0;
+  }
+
+  if (subCommand === "inspect") {
+    const projectRoot = positional(parsed, 2, "project directory");
+    const options = {
+      branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
+      paperId: positional(parsed, 3, "paper ID"),
+    };
+    outputFormatted(
+      parsed,
+      io,
+      inspectWorkingPaper(projectRoot, options),
+      formatPaperInspect,
     );
     return 0;
   }
 
   if (subCommand === "impact") {
     const projectRoot = positional(parsed, 2, "project directory");
-    outputJson(
-      io,
-      analyzeWorkingPaperImpact(projectRoot, {
-        branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
-        paperId: positional(parsed, 3, "paper ID"),
-        changedObjectIds: commaSeparated(
-          option(parsed, "changed", true)!,
-          "--changed",
-        ),
-      }),
-    );
+    const impact = analyzeWorkingPaperImpact(projectRoot, {
+      branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
+      paperId: positional(parsed, 3, "paper ID"),
+      changedObjectIds: commaSeparated(
+        option(parsed, "changed", true)!,
+        "--changed",
+      ),
+    });
+    outputFormatted(parsed, io, impact, formatPaperImpact);
     return 0;
   }
 

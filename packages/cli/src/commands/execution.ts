@@ -10,10 +10,12 @@ import {
   WorkstreamRuntime,
 } from "@reasoning-workbench/store";
 
+import { formatToolsList } from "../formatters/human.js";
 import {
   cliToolRegistry,
   nonNegativeInteger,
   option,
+  outputFormatted,
   outputJson,
   positional,
   type CliIo,
@@ -27,12 +29,10 @@ export async function handleExecutionCommand(
   const command = parsed.positionals[0];
 
   if (command === "tools" && parsed.positionals[1] === "list") {
-    outputJson(
-      io,
-      cliToolRegistry()
-        .list()
-        .map((definition) => definition.contract),
-    );
+    const tools = cliToolRegistry()
+      .list()
+      .map((definition) => definition.contract);
+    outputFormatted(parsed, io, tools, formatToolsList);
     return 0;
   }
 

@@ -6,8 +6,10 @@ import {
   type VerificationDimension,
 } from "@reasoning-workbench/store";
 
+import { formatVerificationProfile } from "../formatters/human.js";
 import {
   option,
+  outputFormatted,
   outputJson,
   positional,
   resolveBranchId,
@@ -63,14 +65,12 @@ export async function handleEvidenceCommand(
 
   if (command === "verification" && parsed.positionals[1] === "profile") {
     const projectRoot = positional(parsed, 2, "project directory");
-    outputJson(
-      io,
-      deriveVerificationProfile(projectRoot, {
-        branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
-        claimId: positional(parsed, 3, "claim ID"),
-        contextId: option(parsed, "context", true)!,
-      }),
-    );
+    const profile = deriveVerificationProfile(projectRoot, {
+      branchId: await resolveBranchId(projectRoot, option(parsed, "branch")),
+      claimId: positional(parsed, 3, "claim ID"),
+      contextId: option(parsed, "context", true)!,
+    });
+    outputFormatted(parsed, io, profile, formatVerificationProfile);
     return 0;
   }
 
