@@ -12,6 +12,7 @@ import { handleObjectsCommand } from "./commands/objects.js";
 import { handlePaperCommand } from "./commands/paper.js";
 import { handleProjectCommand } from "./commands/project.js";
 import { handleWorkstreamCommand } from "./commands/workstream.js";
+import { formatCliError } from "./errors.js";
 import {
   parseArguments,
   processIo,
@@ -19,6 +20,13 @@ import {
 } from "./helpers.js";
 
 export type { CliIo } from "./helpers.js";
+export {
+  formatCliError,
+  formatJsonPath,
+  formatZodError,
+  isZodError,
+  parseJsonSafely,
+} from "./errors.js";
 
 const HELP = `Reasoning Workbench local reasoning runtime
 
@@ -141,9 +149,7 @@ async function main(): Promise<void> {
   try {
     process.exitCode = await runCli(process.argv.slice(2));
   } catch (error) {
-    process.stderr.write(
-      `rw: ${error instanceof Error ? error.message : String(error)}\n`,
-    );
+    process.stderr.write(`rw: ${formatCliError(error)}\n`);
     process.exitCode = 1;
   }
 }

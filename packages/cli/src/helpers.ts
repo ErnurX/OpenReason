@@ -26,6 +26,8 @@ import {
   type VerificationOutcome,
 } from "@reasoning-workbench/store";
 
+import { parseJsonSafely } from "./errors.js";
+
 export interface CliIo {
   stdout(text: string): void;
   stderr(text: string): void;
@@ -128,7 +130,7 @@ export function outputFormatted<T>(
 }
 
 export function asJsonObject(text: string, label: string): Record<string, unknown> {
-  const value = JSON.parse(text) as unknown;
+  const value = parseJsonSafely(text, label);
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`${label} must contain a JSON object`);
   }
@@ -163,14 +165,17 @@ export async function readJsonValue(
   if (inline === undefined && path === undefined) {
     throw new Error(`Requires --${inlineOption} or --${fileOption}`);
   }
-  return JSON.parse(inline ?? (await readFile(path!, "utf8"))) as unknown;
+  return parseJsonSafely(
+    inline ?? (await readFile(path!, "utf8")),
+    path === undefined ? `--${inlineOption}` : path,
+  );
 }
 
 export async function scriptedAdapter(
   parsed: ParsedArguments,
 ): Promise<ScriptedModelAdapter> {
   const scriptPath = option(parsed, "script-file", true)!;
-  const value = JSON.parse(await readFile(scriptPath, "utf8")) as unknown;
+  const value = parseJsonSafely(await readFile(scriptPath, "utf8"), scriptPath);
   if (!Array.isArray(value)) {
     throw new Error(`${scriptPath} must contain a JSON array of model actions`);
   }
@@ -181,7 +186,7 @@ export async function scriptedAdapter(
 
 export async function configuredModel(path: string): Promise<ConfiguredModel> {
   return createConfiguredModel(
-    JSON.parse(await readFile(path, "utf8")) as unknown,
+    parseJsonSafely(await readFile(path, "utf8"), path),
   );
 }
 
@@ -200,7 +205,7 @@ export async function selectedModelAdapter(parsed: ParsedArguments): Promise<Mod
 }
 
 export async function configuredRegistry(path: string): Promise<ModelGatewayRegistry> {
-  const value = JSON.parse(await readFile(path, "utf8")) as unknown;
+  const value = parseJsonSafely(await readFile(path, "utf8"), path);
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error(`${path} must contain a non-empty JSON array of model configs`);
   }
