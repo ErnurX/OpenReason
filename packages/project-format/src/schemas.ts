@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export { z };
+
 import {
   ACTOR_TYPES,
   CURRENT_FORMAT_VERSION,
