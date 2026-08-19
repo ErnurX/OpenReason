@@ -104,6 +104,7 @@ Usage:
   rw workstream recover <project-dir>
   rw verify <project-dir>
   rw rebuild <project-dir>
+  rw cleanup <project-dir> [--dry-run] [--remove-orphans]
   rw export <project-dir> <destination-dir>
   rw fixture rp001 <project-dir>
 `;

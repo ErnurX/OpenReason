@@ -29,7 +29,7 @@ interface TestProject {
   manifest: ProjectManifest;
   projectId: ProjectManifest["projectId"];
   branchId: ProjectManifest["defaultBranchId"];
-  actorId: ProjectManifest["projectId"];
+  actorId: string;
 }
 
 afterEach(async () => {

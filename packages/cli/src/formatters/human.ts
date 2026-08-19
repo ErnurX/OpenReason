@@ -288,3 +288,40 @@ export function formatToolsList(tools: any[]): string {
   }
   return lines.join("\n");
 }
+
+export function formatCleanupReport(report: any): string {
+  const lines: string[] = [];
+  const mode = report.dryRun ? " (dry run)" : "";
+  lines.push(`========================================================`);
+  lines.push(` Project Cleanup Report${mode}`);
+  lines.push(`========================================================`);
+  lines.push(`  Project Root:           ${report.projectRoot ?? "unknown"}`);
+  lines.push(`  Total Files Cleaned:    ${report.totalFilesRemoved ?? 0}`);
+  lines.push(`  Disk Space Freed:       ${report.freedBytes ?? 0} bytes`);
+
+  if (report.stagingFilesRemoved && report.stagingFilesRemoved.length > 0) {
+    lines.push(``);
+    lines.push(`  Staging Files Cleaned:`);
+    for (const f of report.stagingFilesRemoved) {
+      lines.push(`   - ${f}`);
+    }
+  }
+
+  if (report.orphanSegmentsRemoved && report.orphanSegmentsRemoved.length > 0) {
+    lines.push(``);
+    lines.push(`  Orphan Segments Cleaned:`);
+    for (const f of report.orphanSegmentsRemoved) {
+      lines.push(`   - ${f}`);
+    }
+  }
+
+  if (report.staleLocksRemoved && report.staleLocksRemoved.length > 0) {
+    lines.push(``);
+    lines.push(`  Stale Locks Removed:`);
+    for (const f of report.staleLocksRemoved) {
+      lines.push(`   - ${f}`);
+    }
+  }
+
+  return lines.join("\n");
+}
