@@ -14,17 +14,37 @@ export const PROJECTION_SCHEMA_VERSION = 3;
 const require = createRequire(import.meta.url);
 let sqliteModule: typeof import("node:sqlite") | undefined;
 
+function loadSqliteModule(): typeof import("node:sqlite") {
+  if (sqliteModule !== undefined) {
+    return sqliteModule;
+  }
+  // Suppress Node.js 22 ExperimentalWarning: SQLite is an experimental feature
+  // so CLI commands and test suites run cleanly without stderr clutter.
+  const originalEmitWarning = process.emitWarning;
+  process.emitWarning = ((warning: string | Error, ...args: unknown[]) => {
+    const message = typeof warning === "string" ? warning : warning?.message;
+    if (typeof message === "string" && message.includes("SQLite is an experimental feature")) {
+      return;
+    }
+    return (originalEmitWarning as (...a: unknown[]) => void).apply(process, [warning, ...args]);
+  }) as typeof process.emitWarning;
+
+  try {
+    sqliteModule = require("node:sqlite") as typeof import("node:sqlite");
+  } finally {
+    process.emitWarning = originalEmitWarning;
+  }
+  return sqliteModule;
+}
+
 function openDatabase(
   path: string,
   options?: { readOnly?: boolean },
 ): DatabaseSync {
-  // Load SQLite only when a projection is actually touched. Pure format/CAS
-  // commands and `rw --help` should not initialize the experimental Node 22
-  // module or print its runtime warning.
-  sqliteModule ??= require("node:sqlite") as typeof import("node:sqlite");
+  const mod = loadSqliteModule();
   return options === undefined
-    ? new sqliteModule.DatabaseSync(path)
-    : new sqliteModule.DatabaseSync(path, options);
+    ? new mod.DatabaseSync(path)
+    : new mod.DatabaseSync(path, options);
 }
 
 export interface StoredEvent {
