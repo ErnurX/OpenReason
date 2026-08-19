@@ -44,9 +44,11 @@ export interface ParsedArguments {
 }
 
 export const BOOLEAN_OPTIONS = new Set([
+  "dry-run",
   "help",
   "human",
   "json",
+  "remove-orphans",
   "require-tool-use",
   "unsafe-process-only",
 ]);

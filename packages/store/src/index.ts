@@ -1,4 +1,5 @@
 export * from "./cas.js";
+export * from "./cleanup.js";
 export * from "./context.js";
 export * from "./coordinator.js";
 export * from "./event-log.js";

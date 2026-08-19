@@ -1,4 +1,5 @@
 import {
+  cleanupProject,
   createProject,
   createRp001Fixture,
   exportProject,
@@ -9,6 +10,7 @@ import {
 } from "@reasoning-workbench/store";
 
 import {
+  formatCleanupReport,
   formatProjectHistory,
   formatProjectInfo,
 } from "../formatters/human.js";
@@ -64,6 +66,18 @@ export async function handleProjectCommand(
 
   if (command === "rebuild") {
     outputJson(io, await rebuildProjection(positional(parsed, 1, "project directory")));
+    return 0;
+  }
+
+  if (command === "cleanup") {
+    const projectRoot = positional(parsed, 1, "project directory");
+    const dryRun = parsed.options.has("dry-run");
+    const removeOrphanSegments = parsed.options.has("remove-orphans");
+    const report = await cleanupProject(projectRoot, {
+      dryRun,
+      removeOrphanSegments,
+    });
+    outputFormatted(parsed, io, report, formatCleanupReport);
     return 0;
   }
 

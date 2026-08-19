@@ -32,12 +32,13 @@ import { setTimeout as delay } from "node:timers/promises";
 export const CANONICAL_MANIFEST_FILE_NAME = "reasoning-project.json";
 export const LEGACY_MANIFEST_FILE_NAME = "project.json";
 
-const EVENTS_DIRECTORY_NAME = "events";
-const EVENT_LOG_LOCK_RELATIVE_PATH = join(
+export const EVENTS_DIRECTORY_NAME = "events";
+export const EVENT_LOG_LOCK_RELATIVE_PATH = join(
   ".reasoning",
   "runtime",
   "event-log.append.lock",
 );
+export const DEFAULT_STALE_LOCK_MS = 10 * 60_000;
 
 export type EventLogIssueSeverity = "error" | "warning";
 

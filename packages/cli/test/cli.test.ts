@@ -955,12 +955,13 @@ describe("Reasoning Workbench CLI", () => {
     ).toBe(0);
     expect(stalenessIo.stdoutText()).toContain("Staleness Report:");
 
-    // Test workstream list --human
-    const workstreamIo = captureIo();
+    // Test cleanup --human
+    const cleanupIo = captureIo();
     expect(
-      await runCli(["workstream", "list", projectRoot, "--human"], workstreamIo),
+      await runCli(["cleanup", projectRoot, "--dry-run", "--human"], cleanupIo),
     ).toBe(0);
-    expect(workstreamIo.stdoutText()).toContain("Workstreams");
+    expect(cleanupIo.stdoutText()).toContain("Project Cleanup Report (dry run)");
+    expect(cleanupIo.stdoutText()).toContain("Total Files Cleaned:    0");
   });
 });
 
