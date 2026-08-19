@@ -338,4 +338,30 @@ describe("SQLite project projection", () => {
       "state.sqlite",
     ]);
   });
+
+  it("creates compound indexes for graph traversal, object versioning, and event lookups", async () => {
+    await rebuildProjection(projectRoot, baseEvents());
+    const db = new DatabaseSync(join(projectRoot, PROJECTION_RELATIVE_PATH), {
+      readOnly: true,
+    });
+    try {
+      const rows = db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
+        .all() as Array<{ name: string }>;
+      const indexNames = new Set(rows.map((row) => row.name));
+
+      expect(indexNames.has("object_versions_object_idx")).toBe(true);
+      expect(indexNames.has("object_versions_branch_type_idx")).toBe(true);
+      expect(indexNames.has("current_objects_branch_idx")).toBe(true);
+      expect(indexNames.has("edges_origin_branch_idx")).toBe(true);
+      expect(indexNames.has("edges_from_object_idx")).toBe(true);
+      expect(indexNames.has("edges_to_object_idx")).toBe(true);
+      expect(indexNames.has("visible_edges_branch_idx")).toBe(true);
+      expect(indexNames.has("events_branch_seq_idx")).toBe(true);
+      expect(indexNames.has("artifacts_digest_idx")).toBe(true);
+    } finally {
+      db.close();
+    }
+  });
 });
+

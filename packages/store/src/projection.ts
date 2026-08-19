@@ -220,12 +220,20 @@ function createSchema(db: DatabaseSync): void {
 
     CREATE INDEX object_versions_object_idx
       ON object_versions(object_id, version);
+    CREATE INDEX object_versions_branch_type_idx
+      ON object_versions(origin_branch_id, object_type);
     CREATE INDEX current_objects_branch_idx
       ON current_objects(branch_id, object_id);
     CREATE INDEX edges_origin_branch_idx
       ON edges(origin_branch_id, edge_type);
+    CREATE INDEX edges_from_object_idx
+      ON edges(from_object_id, edge_type);
+    CREATE INDEX edges_to_object_idx
+      ON edges(to_object_id, edge_type);
     CREATE INDEX visible_edges_branch_idx
       ON visible_edges(branch_id, edge_id);
+    CREATE INDEX events_branch_seq_idx
+      ON events(branch_id, sequence);
     CREATE INDEX artifacts_digest_idx
       ON artifacts(digest);
   `);
