@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   EventLogIntegrityError,
   appendEvent,
+  appendEventsBatch,
   initializeEventLog,
   inspectEventLog,
   readAcceptedEvents,
@@ -219,5 +220,45 @@ describe("event log", () => {
     await expect(readFile(join(project.root, "reasoning-project.json"), "utf8")).rejects.toMatchObject({
       code: "ENOENT",
     });
+  });
+
+  it("appends a batch of events atomically and commits them in a single manifest update", async () => {
+    const project = await makeProject();
+    const event1 = testEvent(project, 1);
+    const event2 = testEvent(project, 2, event1);
+    const event3 = testEvent(project, 3, event2);
+
+    const result = await appendEventsBatch(project.root, [event1, event2, event3]);
+
+    expect(result.events).toEqual([event1, event2, event3]);
+    expect(result.segmentPaths).toEqual([
+      "events/00000001-00000001.jsonl",
+      "events/00000002-00000002.jsonl",
+      "events/00000003-00000003.jsonl",
+    ]);
+    expect(result.manifest.eventSegments).toEqual([
+      "events/00000001-00000001.jsonl",
+      "events/00000002-00000002.jsonl",
+      "events/00000003-00000003.jsonl",
+    ]);
+    expect(await readAcceptedEvents(project.root)).toEqual([event1, event2, event3]);
+
+    const emptyResult = await appendEventsBatch(project.root, []);
+    expect(emptyResult.events).toEqual([]);
+    expect(emptyResult.segmentPaths).toEqual([]);
+  });
+
+  it("rejects an entire batch atomically if an event fails integrity checks", async () => {
+    const project = await makeProject();
+    const event1 = testEvent(project, 1);
+    const event2Invalid = testEvent(project, 99, event1);
+
+    await expect(
+      appendEventsBatch(project.root, [event1, event2Invalid]),
+    ).rejects.toMatchObject({
+      issues: [expect.objectContaining({ code: "EVENT_SEQUENCE_NON_MONOTONIC" })],
+    });
+
+    expect(await readAcceptedEvents(project.root)).toEqual([]);
   });
 });
