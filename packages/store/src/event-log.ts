@@ -114,6 +114,13 @@ export interface AppendEventResult {
   recoveredOrphanSegment: boolean;
 }
 
+export interface AppendEventsBatchResult {
+  events: Event[];
+  manifest: ProjectManifest;
+  segmentPaths: string[];
+  recoveredOrphanSegments: boolean[];
+}
+
 export interface InspectEventLogOptions {
   manifestFileName?: string;
 }
@@ -185,6 +192,171 @@ export async function initializeEventLog(
 }
 
 /**
+ * Appends a batch of immutable JSONL segments atomically, committing all
+ * new segments to the project manifest in a single atomic replacement.
+ */
+export async function appendEventsBatch(
+  projectRoot: string,
+  candidates: readonly unknown[],
+  options: AppendEventOptions = {},
+): Promise<AppendEventsBatchResult> {
+  const paths = await initializeEventLog(projectRoot, options);
+  const lock = await acquireLock(paths.lockPath, options);
+
+  const stagingSegmentPaths: string[] = [];
+  let manifestStagingPath: string | undefined;
+
+  try {
+    const manifest = await readManifest(paths.manifestPath);
+    if (candidates.length === 0) {
+      return {
+        events: [],
+        manifest,
+        segmentPaths: [],
+        recoveredOrphanSegments: [],
+      };
+    }
+
+    const acceptedEvents = await readAcceptedEvents(paths.projectRoot, manifest, {
+      manifestFileName: basename(paths.manifestPath),
+    });
+
+    let previousEvent = acceptedEvents.at(-1);
+    const parsedEvents: Event[] = [];
+
+    for (const candidate of candidates) {
+      const event = parseEvent(candidate);
+
+      if (event.projectId !== manifest.projectId) {
+        throw new EventLogIntegrityError("Event belongs to a different project", [
+          issue("EVENT_PROJECT_MISMATCH", "error", "Event projectId does not match manifest", {
+            eventId: event.eventId,
+            expected: manifest.projectId,
+            actual: event.projectId,
+          }),
+        ]);
+      }
+
+      const expectedSequence = (previousEvent?.sequence ?? 0) + 1;
+
+      if (event.sequence !== expectedSequence) {
+        throw new EventLogIntegrityError("Event sequence is not the next accepted sequence", [
+          issue(
+            "EVENT_SEQUENCE_NON_MONOTONIC",
+            "error",
+            `Expected sequence ${expectedSequence}, received ${event.sequence}`,
+            {
+              eventId: event.eventId,
+              expected: expectedSequence,
+              actual: event.sequence,
+            },
+          ),
+        ]);
+      }
+
+      if (
+        event.previousEventHash !== undefined &&
+        event.previousEventHash !== previousEvent?.eventHash
+      ) {
+        throw new EventLogIntegrityError("Event previousEventHash does not match history", [
+          issue(
+            "EVENT_PREVIOUS_HASH_MISMATCH",
+            "error",
+            "Event previousEventHash does not match the preceding accepted event",
+            {
+              eventId: event.eventId,
+              expected: previousEvent?.eventHash ?? null,
+              actual: event.previousEventHash,
+            },
+          ),
+        ]);
+      }
+
+      previousEvent = event;
+      parsedEvents.push(event);
+    }
+
+    const destinations: Array<{ absolutePath: string; relativePath: string; reuseExisting: boolean }> = [];
+    const newSegmentPaths: string[] = [];
+    const recoveredOrphanSegments: boolean[] = [];
+
+    for (const event of parsedEvents) {
+      const serializedEvent = `${JSON.stringify(event)}\n`;
+      const destination = await chooseSegmentDestination(
+        paths.eventsDirectory,
+        event,
+        serializedEvent,
+      );
+      destinations.push(destination);
+      newSegmentPaths.push(destination.relativePath);
+      recoveredOrphanSegments.push(destination.reuseExisting);
+
+      const hookContext: AppendHookContext = {
+        projectRoot: paths.projectRoot,
+        manifestPath: paths.manifestPath,
+        segmentPath: destination.relativePath,
+        absoluteSegmentPath: destination.absolutePath,
+        event,
+      };
+
+      if (!destination.reuseExisting) {
+        const segmentStagingPath = temporarySiblingPath(destination.absolutePath, lock.token);
+        stagingSegmentPaths.push(segmentStagingPath);
+        await writeDurableFile(segmentStagingPath, serializedEvent);
+        await options.hooks?.afterSegmentStaged?.(hookContext);
+        await rename(segmentStagingPath, destination.absolutePath);
+        const index = stagingSegmentPaths.indexOf(segmentStagingPath);
+        if (index >= 0) stagingSegmentPaths.splice(index, 1);
+        await syncDirectory(paths.eventsDirectory);
+      }
+
+      await options.hooks?.afterSegmentCommitted?.(hookContext);
+    }
+
+    const nextManifest = ProjectManifestSchema.parse({
+      ...manifest,
+      eventSegments: [...manifest.eventSegments, ...newSegmentPaths],
+    });
+    const serializedManifest = `${JSON.stringify(nextManifest, null, 2)}\n`;
+    manifestStagingPath = temporarySiblingPath(paths.manifestPath, lock.token);
+    await writeDurableFile(manifestStagingPath, serializedManifest);
+
+    const finalHookContext: AppendHookContext = {
+      projectRoot: paths.projectRoot,
+      manifestPath: paths.manifestPath,
+      segmentPath: destinations.at(-1)!.relativePath,
+      absoluteSegmentPath: destinations.at(-1)!.absolutePath,
+      event: parsedEvents.at(-1)!,
+    };
+
+    await options.hooks?.beforeManifestCommit?.(finalHookContext);
+    await rename(manifestStagingPath, paths.manifestPath);
+    manifestStagingPath = undefined;
+    await syncDirectory(dirname(paths.manifestPath));
+
+    await options.hooks?.afterManifestCommitted?.(finalHookContext);
+
+    return {
+      events: parsedEvents,
+      manifest: nextManifest,
+      segmentPaths: newSegmentPaths,
+      recoveredOrphanSegments,
+    };
+  } finally {
+    const cleanupPromises = stagingSegmentPaths.map(removeIfPresent);
+    cleanupPromises.push(removeIfPresent(manifestStagingPath));
+    const cleanupResults = await Promise.allSettled(cleanupPromises);
+    await releaseLock(lock);
+    const cleanupFailure = cleanupResults.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (cleanupFailure !== undefined) {
+      throw cleanupFailure.reason;
+    }
+  }
+}
+
+/**
  * Appends one immutable JSONL segment and accepts it by atomically replacing
  * the manifest. A segment that survives a failure before the manifest rename
  * is intentionally an orphan and is never returned by readAcceptedEvents.
@@ -194,125 +366,13 @@ export async function appendEvent(
   candidate: unknown,
   options: AppendEventOptions = {},
 ): Promise<AppendEventResult> {
-  const paths = await initializeEventLog(projectRoot, options);
-  const lock = await acquireLock(paths.lockPath, options);
-
-  let segmentStagingPath: string | undefined;
-  let manifestStagingPath: string | undefined;
-
-  try {
-    const manifest = await readManifest(paths.manifestPath);
-    const event = parseEvent(candidate);
-
-    if (event.projectId !== manifest.projectId) {
-      throw new EventLogIntegrityError("Event belongs to a different project", [
-        issue("EVENT_PROJECT_MISMATCH", "error", "Event projectId does not match manifest", {
-          eventId: event.eventId,
-          expected: manifest.projectId,
-          actual: event.projectId,
-        }),
-      ]);
-    }
-
-    const acceptedEvents = await readAcceptedEvents(paths.projectRoot, manifest, {
-      manifestFileName: basename(paths.manifestPath),
-    });
-    const previousEvent = acceptedEvents.at(-1);
-    const expectedSequence = (previousEvent?.sequence ?? 0) + 1;
-
-    if (event.sequence !== expectedSequence) {
-      throw new EventLogIntegrityError("Event sequence is not the next accepted sequence", [
-        issue(
-          "EVENT_SEQUENCE_NON_MONOTONIC",
-          "error",
-          `Expected sequence ${expectedSequence}, received ${event.sequence}`,
-          {
-            eventId: event.eventId,
-            expected: expectedSequence,
-            actual: event.sequence,
-          },
-        ),
-      ]);
-    }
-
-    if (
-      event.previousEventHash !== undefined &&
-      event.previousEventHash !== previousEvent?.eventHash
-    ) {
-      throw new EventLogIntegrityError("Event previousEventHash does not match history", [
-        issue(
-          "EVENT_PREVIOUS_HASH_MISMATCH",
-          "error",
-          "Event previousEventHash does not match the preceding accepted event",
-          {
-            eventId: event.eventId,
-            expected: previousEvent?.eventHash ?? null,
-            actual: event.previousEventHash,
-          },
-        ),
-      ]);
-    }
-
-    const serializedEvent = `${JSON.stringify(event)}\n`;
-    const destination = await chooseSegmentDestination(
-      paths.eventsDirectory,
-      event,
-      serializedEvent,
-    );
-    const hookContext: AppendHookContext = {
-      projectRoot: paths.projectRoot,
-      manifestPath: paths.manifestPath,
-      segmentPath: destination.relativePath,
-      absoluteSegmentPath: destination.absolutePath,
-      event,
-    };
-
-    if (!destination.reuseExisting) {
-      segmentStagingPath = temporarySiblingPath(destination.absolutePath, lock.token);
-      await writeDurableFile(segmentStagingPath, serializedEvent);
-      await options.hooks?.afterSegmentStaged?.(hookContext);
-      await rename(segmentStagingPath, destination.absolutePath);
-      segmentStagingPath = undefined;
-      await syncDirectory(paths.eventsDirectory);
-    }
-
-    await options.hooks?.afterSegmentCommitted?.(hookContext);
-
-    const nextManifest = ProjectManifestSchema.parse({
-      ...manifest,
-      eventSegments: [...manifest.eventSegments, destination.relativePath],
-    });
-    const serializedManifest = `${JSON.stringify(nextManifest, null, 2)}\n`;
-    manifestStagingPath = temporarySiblingPath(paths.manifestPath, lock.token);
-    await writeDurableFile(manifestStagingPath, serializedManifest);
-    await options.hooks?.beforeManifestCommit?.(hookContext);
-    await rename(manifestStagingPath, paths.manifestPath);
-    manifestStagingPath = undefined;
-    await syncDirectory(dirname(paths.manifestPath));
-
-    await options.hooks?.afterManifestCommitted?.(hookContext);
-
-    return {
-      event,
-      manifest: nextManifest,
-      segmentPath: destination.relativePath,
-      recoveredOrphanSegment: destination.reuseExisting,
-    };
-  } finally {
-    // Lock release must not be skipped even when cleanup of a staging file
-    // encounters an independent filesystem error.
-    const cleanupResults = await Promise.allSettled([
-      removeIfPresent(segmentStagingPath),
-      removeIfPresent(manifestStagingPath),
-    ]);
-    await releaseLock(lock);
-    const cleanupFailure = cleanupResults.find(
-      (result): result is PromiseRejectedResult => result.status === "rejected",
-    );
-    if (cleanupFailure !== undefined) {
-      throw cleanupFailure.reason;
-    }
-  }
+  const result = await appendEventsBatch(projectRoot, [candidate], options);
+  return {
+    event: result.events[0]!,
+    manifest: result.manifest,
+    segmentPath: result.segmentPaths[0]!,
+    recoveredOrphanSegment: result.recoveredOrphanSegments[0] ?? false,
+  };
 }
 
 /**
