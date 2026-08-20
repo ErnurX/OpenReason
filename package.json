@@ -11,11 +11,11 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "schemas": "node --import tsx scripts/generate-json-schemas.ts",
-    "schemas:check": "node --import tsx scripts/generate-json-schemas.ts --check",
-    "rw": "node --import tsx packages/cli/src/index.ts",
+    "test": "NODE_OPTIONS='--no-warnings=ExperimentalWarning' vitest run",
+    "test:watch": "NODE_OPTIONS='--no-warnings=ExperimentalWarning' vitest",
+    "schemas": "node --no-warnings=ExperimentalWarning --import tsx scripts/generate-json-schemas.ts",
+    "schemas:check": "node --no-warnings=ExperimentalWarning --import tsx scripts/generate-json-schemas.ts --check",
+    "rw": "node --no-warnings=ExperimentalWarning --import tsx packages/cli/src/index.ts",
     "validate:stage0": "python3 scripts/validate_stage0.py",
     "check": "pnpm run typecheck && pnpm run schemas:check && pnpm run test && pnpm run validate:stage0"
   },
