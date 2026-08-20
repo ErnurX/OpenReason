@@ -2,12 +2,13 @@
 
 OpenReason is an open-source, local-first reasoning workbench for sustained
 mathematical, theoretical-physics, and computational reasoning. The current
-repository implements **Stage 7: Living Working Paper** on the canonical
-substrate. Versioned papers transclude exact claims, contexts, evidence,
-reviews, sources, runs, equations, gaps, and CAS artifacts; deterministic
-Markdown/LaTeX renders expose verification vectors and scoped impact after a
-hypothesis changes. It is not yet an autonomous scientist, proof kernel,
-publication system, or graphical workbench.
+repository implements **Stage 8: Verification Plane** on the canonical
+substrate. Typed verifier adapters bind exact claims, contexts, inputs,
+environments, permissions, and results; independent review, death-spiral
+guards, formal-statement alignment, and executable completion policies can
+refuse premature completion while preserving concrete gaps. It is not yet an
+autonomous scientist, bundled proof kernel, literature system, publication
+system, or graphical workbench.
 
 ## Quick start
 
@@ -30,6 +31,7 @@ pnpm rw graph query /tmp/rw-demo
 
 # Inspect the trusted tools available to the local CLI runtime.
 pnpm rw tools list
+pnpm rw verification list --human
 
 # Or create the RP-001 Euler-polynomial fixture.
 pnpm rw fixture rp001 /tmp/rw-rp001
@@ -58,7 +60,8 @@ under `schemas/generated/` from the Zod source schemas.
 
 ## CLI
 
-All commands emit JSON except `--help` and errors.
+Commands emit JSON by default. Commands with a compact formatter also accept
+`--human`; `--help` and errors are always text.
 
 ```text
 pnpm rw init <project-dir> --title <title>
@@ -80,6 +83,17 @@ pnpm rw review record <project-dir> --claim <claim-id> --context <context-id>
     --outcome <outcome> --summary <text> [--branch <id-or-name>]
 pnpm rw verification profile <project-dir> <claim-id> --context <context-id>
     [--branch <id-or-name>]
+pnpm rw verification list
+pnpm rw verification run <project-dir> --claim <claim-id> --context <context-id>
+    --verifier <verifier-id> (--input <json> | --input-file <path>)
+    [--artifact <id,...>] [--assumption <id,...>] [--branch <id-or-name>]
+pnpm rw verification packet <project-dir> --claim <claim-id> --context <context-id>
+    [--evidence <id,...>] [--source <id,...>] [--branch <id-or-name>]
+pnpm rw verification review <project-dir> --review-file <path> [--branch <id-or-name>]
+pnpm rw verification loop <project-dir> --claim <claim-id> --context <context-id>
+    [--enforce] [--branch <id-or-name>]
+pnpm rw verification align <project-dir> --alignment-file <path> [--branch <id-or-name>]
+pnpm rw verification recover <project-dir> [--branch <id-or-name>]
 pnpm rw paper put <project-dir> (--paper <json> | --paper-file <path>)
     [--paper-id <document-id>] [--branch <id-or-name>]
 pnpm rw paper render <project-dir> <paper-id> [--format <markdown|latex>]
@@ -134,6 +148,7 @@ pnpm rw workstream recover <project-dir>
 pnpm rw history <project-dir>
 pnpm rw verify <project-dir>
 pnpm rw rebuild <project-dir>
+pnpm rw cleanup <project-dir> [--dry-run] [--remove-orphans]
 pnpm rw export <project-dir> <destination-dir>
 pnpm rw fixture rp001 <project-dir>
 ```
@@ -202,6 +217,17 @@ numerical, source, reproducibility, human-review, and formal dimensions
 separate from model confidence. Impact warnings reuse graph paths but accept a
 path for a section only when every edge has that section's context. See
 [ADR-0011](docs/architecture/adr/0011-stage-7-living-working-paper.md).
+
+Stage 8 executes typed verifier adapters behind explicit schemas,
+capabilities, side effects, determinism, and assurance levels. The profile now
+separates logical, symbolic, numerical, physical, source, reproducibility,
+human-review, and formal dimensions; only `formal-kernel` evidence becomes
+`verified`, while bundled domain report adapters remain honestly `reported`.
+CAS integrity is machine-checked locally. Independent review packets omit
+persuasive author self-assessment, reviewer loops can escalate to durable human
+gaps, and completion policies can require current evidence, reviewers, clear
+loops, and informal/formal alignment. See
+[ADR-0012](docs/architecture/adr/0012-stage-8-verification-plane.md).
 
 A minimal local-compatible model declaration is:
 
@@ -274,8 +300,9 @@ but it never becomes the only copy of project meaning.
   context compilation, provider-neutral agent coordination, live model
   adapters, capability routing, usage accounting, immutable compute jobs,
   local/SSH execution targets, deterministic artifact reuse, typed working
-  papers, Markdown/LaTeX rendering, verification profiles, semantic impact and
-  branch comparison, verification, export, and the RP-001 fixture.
+  papers, Markdown/LaTeX rendering, verifier adapters, independent review,
+  hard verification gates, semantic impact and branch comparison, cleanup,
+  verification, export, and the RP-001 fixture.
 - `packages/cli` — the `rw` command-line adapter over the project service.
 - `schemas` — schema-generation notes and checked-in public Draft 2020-12
   schemas.
@@ -301,3 +328,4 @@ but it never becomes the only copy of project meaning.
 - [Stage 5 exit](docs/roadmap/stage-5-exit.md)
 - [Stage 6 exit](docs/roadmap/stage-6-exit.md)
 - [Stage 7 exit](docs/roadmap/stage-7-exit.md)
+- [Stage 8 exit](docs/roadmap/stage-8-exit.md)

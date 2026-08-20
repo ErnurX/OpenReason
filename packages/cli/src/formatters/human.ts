@@ -145,20 +145,15 @@ export function formatVerificationProfile(profile: any): string {
   lines.push(` Context: ${profile.contextId ?? "unknown"}`);
   lines.push(`========================================================`);
 
-  const dimensions = profile.dimensions ?? profile.vector ?? profile;
-  const dimensionKeys = [
-    "logical",
-    "symbolic",
-    "numerical",
-    "source",
-    "reproduction",
-    "physical",
-    "formal",
-  ];
-
   lines.push(` Dimensions:`);
-  for (const key of dimensionKeys) {
-    const dim = dimensions[key] ?? { status: "missing" };
+  const dimensions = Array.isArray(profile.dimensions)
+    ? profile.dimensions
+    : Object.entries(profile.dimensions ?? profile.vector ?? {}).map(([dimension, value]) => ({
+        dimension,
+        ...(typeof value === "object" && value !== null ? value : {}),
+      }));
+  for (const dim of dimensions) {
+    const key = dim.dimension ?? "unknown";
     const status = (dim.status ?? (dim.outcome ? dim.outcome : "missing")).toUpperCase();
     const tag = `[${status}]`.padEnd(16);
     const summary = dim.summary ? ` - ${dim.summary}` : "";
@@ -173,6 +168,38 @@ export function formatVerificationProfile(profile: any): string {
     }
   }
   return lines.join("\n");
+}
+
+export function formatVerifierList(contracts: readonly any[]): string {
+  return [
+    `Verification adapters (${contracts.length})`,
+    ...contracts.map((contract) =>
+      `  ${contract.verifierId}  ${contract.dimension}/${contract.assurance}  v${contract.version}`
+    ),
+  ].join("\n");
+}
+
+export function formatVerificationRun(value: any): string {
+  const evidence = value.evidence ?? value.review ?? value.alignment;
+  const result = value.result ?? value;
+  return [
+    `Verification ${String(result.outcome ?? "recorded").toUpperCase()}`,
+    ...(evidence?.objectId ? [`  record: ${evidence.objectId}`] : []),
+    ...(value.run?.objectId ? [`  run:    ${value.run.objectId}`] : []),
+    ...(value.failure?.objectId ? [`  gap:    ${value.failure.objectId}`] : []),
+    ...(result.summary ? [`  ${result.summary}`] : []),
+  ].join("\n");
+}
+
+export function formatReviewLoop(value: any): string {
+  const analysis = value.analysis ?? value;
+  return [
+    `Review loop: ${String(analysis.status ?? "unknown").toUpperCase()}`,
+    ...((analysis.signals ?? []) as any[]).map(
+      (signal) => `  ${signal.code}: ${signal.message}`,
+    ),
+    ...(value.failure?.objectId ? [`  escalation gap: ${value.failure.objectId}`] : []),
+  ].join("\n");
 }
 
 export function formatPaperInspect(paper: any): string {

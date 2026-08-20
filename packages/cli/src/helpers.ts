@@ -45,6 +45,7 @@ export interface ParsedArguments {
 
 export const BOOLEAN_OPTIONS = new Set([
   "dry-run",
+  "enforce",
   "help",
   "human",
   "json",

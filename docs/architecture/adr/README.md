@@ -16,6 +16,7 @@ normative together with the product contract and system invariants.
 | [0009](0009-stage-5-model-gateway.md) | Stage 5 live model adapters, credential boundary, routing, and usage accounting | Accepted |
 | [0010](0010-stage-6-execution-plane.md) | Stage 6 immutable jobs, local/SSH execution, artifact lineage, and deterministic reuse | Accepted |
 | [0011](0011-stage-7-living-working-paper.md) | Stage 7 typed working papers, exact transclusion, evidence vectors, scoped impact, and semantic comparison | Accepted |
+| [0012](0012-stage-8-verification-plane.md) | Stage 8 typed verifier adapters, independent review, hard gates, loop guards, and formal alignment | Accepted |
 
 ## ADR lifecycle
 

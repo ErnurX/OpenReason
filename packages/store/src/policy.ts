@@ -8,6 +8,14 @@ import {
 
 import { inspectProject, projectHistory } from "./project.js";
 import type { EdgeProjection, ObjectProjection } from "./projection.js";
+import {
+  deriveVerificationProfile,
+  VERIFICATION_ASSURANCE_LEVELS,
+  VERIFICATION_DIMENSIONS,
+  type VerificationAssurance,
+  type VerificationDimension,
+} from "./paper.js";
+import { analyzeReviewLoop } from "./verification.js";
 
 interface CompletionRuleBase {
   readonly ruleId: string;
@@ -49,6 +57,40 @@ export interface ArtifactCountRule extends CompletionRuleBase {
   readonly mediaTypes?: readonly string[];
 }
 
+export interface VerificationGateRule extends CompletionRuleBase {
+  readonly kind: "verification_gate";
+  readonly dimensions: readonly VerificationDimension[];
+  readonly claimIds?: readonly string[];
+  readonly requiredStatus?: "supported" | "verified";
+  readonly allowedAssurances?: readonly VerificationAssurance[];
+  readonly allowExplicitConjectures?: boolean;
+}
+
+export interface IndependentReviewRule extends CompletionRuleBase {
+  readonly kind: "independent_review";
+  readonly claimIds?: readonly string[];
+  readonly minReviewers: number;
+  readonly requireFreshContext?: boolean;
+  readonly requireAdversarial?: boolean;
+  readonly requireCrossModelFamily?: boolean;
+  readonly allowExplicitConjectures?: boolean;
+}
+
+export interface ReviewLoopClearRule extends CompletionRuleBase {
+  readonly kind: "review_loop_clear";
+  readonly claimIds?: readonly string[];
+  readonly repeatedObjectionLimit?: number;
+  readonly noNewEvidenceLimit?: number;
+  readonly claimCycleLimit?: number;
+  readonly allowExplicitConjectures?: boolean;
+}
+
+export interface FormalAlignmentRule extends CompletionRuleBase {
+  readonly kind: "formal_alignment";
+  readonly claimIds?: readonly string[];
+  readonly allowExplicitConjectures?: boolean;
+}
+
 /**
  * A closed, JSON-serializable set of Stage-2 completion predicates.
  *
@@ -60,7 +102,11 @@ export type CompletionRule =
   | EdgeCountRule
   | EveryObjectHasEdgeRule
   | NoOpenFailuresRule
-  | ArtifactCountRule;
+  | ArtifactCountRule
+  | VerificationGateRule
+  | IndependentReviewRule
+  | ReviewLoopClearRule
+  | FormalAlignmentRule;
 
 export interface CompletionPolicy {
   readonly schemaVersion: 1;
@@ -100,6 +146,8 @@ interface VisibleArtifact {
 
 const objectTypes = new Set<string>(OBJECT_TYPES);
 const edgeTypes = new Set<string>(EDGE_TYPES);
+const verificationDimensions = new Set<string>(VERIFICATION_DIMENSIONS);
+const verificationAssurances = new Set<string>(VERIFICATION_ASSURANCE_LEVELS);
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -173,6 +221,12 @@ function uniqueStringArray(value: unknown, label: string): readonly string[] {
     throw new TypeError(`${label} cannot contain duplicates`);
   }
   return checked;
+}
+
+function optionalBoolean(value: unknown, label: string): void {
+  if (value !== undefined && typeof value !== "boolean") {
+    throw new TypeError(`${label} must be boolean`);
+  }
 }
 
 /** Rejects malformed policies and any attempt to inject a success result. */
@@ -251,6 +305,98 @@ export function assertCompletionPolicy(policy: unknown): asserts policy is Compl
         if (rule.mediaTypes !== undefined) {
           uniqueStringArray(rule.mediaTypes, `${label}.mediaTypes`);
         }
+        break;
+      case "verification_gate":
+        allowedKeys(
+          rule,
+          [
+            "ruleId",
+            "label",
+            "kind",
+            "dimensions",
+            "claimIds",
+            "requiredStatus",
+            "allowedAssurances",
+            "allowExplicitConjectures",
+          ],
+          label,
+        );
+        uniqueEnumArray<VerificationDimension>(
+          rule.dimensions,
+          verificationDimensions,
+          `${label}.dimensions`,
+        );
+        if (rule.claimIds !== undefined) uniqueStringArray(rule.claimIds, `${label}.claimIds`);
+        if (
+          rule.requiredStatus !== undefined &&
+          rule.requiredStatus !== "supported" &&
+          rule.requiredStatus !== "verified"
+        ) throw new TypeError(`${label}.requiredStatus must be supported or verified`);
+        if (rule.allowedAssurances !== undefined) {
+          uniqueEnumArray<VerificationAssurance>(
+            rule.allowedAssurances,
+            verificationAssurances,
+            `${label}.allowedAssurances`,
+          );
+        }
+        optionalBoolean(rule.allowExplicitConjectures, `${label}.allowExplicitConjectures`);
+        break;
+      case "independent_review":
+        allowedKeys(
+          rule,
+          [
+            "ruleId",
+            "label",
+            "kind",
+            "claimIds",
+            "minReviewers",
+            "requireFreshContext",
+            "requireAdversarial",
+            "requireCrossModelFamily",
+            "allowExplicitConjectures",
+          ],
+          label,
+        );
+        if (rule.claimIds !== undefined) uniqueStringArray(rule.claimIds, `${label}.claimIds`);
+        if (nonNegativeInteger(rule.minReviewers, `${label}.minReviewers`) === 0) {
+          throw new TypeError(`${label}.minReviewers must be positive`);
+        }
+        optionalBoolean(rule.requireFreshContext, `${label}.requireFreshContext`);
+        optionalBoolean(rule.requireAdversarial, `${label}.requireAdversarial`);
+        optionalBoolean(rule.requireCrossModelFamily, `${label}.requireCrossModelFamily`);
+        optionalBoolean(rule.allowExplicitConjectures, `${label}.allowExplicitConjectures`);
+        break;
+      case "review_loop_clear":
+        allowedKeys(
+          rule,
+          [
+            "ruleId",
+            "label",
+            "kind",
+            "claimIds",
+            "repeatedObjectionLimit",
+            "noNewEvidenceLimit",
+            "claimCycleLimit",
+            "allowExplicitConjectures",
+          ],
+          label,
+        );
+        if (rule.claimIds !== undefined) uniqueStringArray(rule.claimIds, `${label}.claimIds`);
+        for (const key of ["repeatedObjectionLimit", "noNewEvidenceLimit", "claimCycleLimit"] as const) {
+          if (rule[key] !== undefined && nonNegativeInteger(rule[key], `${label}.${key}`) === 0) {
+            throw new TypeError(`${label}.${key} must be positive`);
+          }
+        }
+        optionalBoolean(rule.allowExplicitConjectures, `${label}.allowExplicitConjectures`);
+        break;
+      case "formal_alignment":
+        allowedKeys(
+          rule,
+          ["ruleId", "label", "kind", "claimIds", "allowExplicitConjectures"],
+          label,
+        );
+        if (rule.claimIds !== undefined) uniqueStringArray(rule.claimIds, `${label}.claimIds`);
+        optionalBoolean(rule.allowExplicitConjectures, `${label}.allowExplicitConjectures`);
         break;
       default:
         throw new TypeError(`${label}.kind is unsupported: ${String(rule.kind)}`);
@@ -351,11 +497,51 @@ function result(
   };
 }
 
+function contentRecord(object: ObjectProjection): Record<string, unknown> | undefined {
+  return typeof object.content === "object" && object.content !== null && !Array.isArray(object.content)
+    ? object.content as Record<string, unknown>
+    : undefined;
+}
+
+function explicitlyUnresolvedConjecture(object: ObjectProjection): boolean {
+  const content = contentRecord(object);
+  return content?.verificationDisposition === "conjecture" &&
+    typeof content.unresolvedReason === "string" &&
+    content.unresolvedReason.trim().length > 0;
+}
+
+function claimsForRule(
+  claimIds: readonly string[] | undefined,
+  allowExplicitConjectures: boolean | undefined,
+  objects: readonly ObjectProjection[],
+): { claims: ObjectProjection[]; missing: string[]; excluded: string[] } {
+  const byId = new Map(objects.map((object) => [object.objectId, object]));
+  const selectedIds = claimIds === undefined
+    ? objects.filter((object) => object.objectType === "claim").map((object) => object.objectId)
+    : [...claimIds];
+  const missing: string[] = [];
+  const excluded: string[] = [];
+  const claims: ObjectProjection[] = [];
+  for (const id of selectedIds.sort((left, right) => left.localeCompare(right))) {
+    const object = byId.get(id);
+    if (object === undefined || object.objectType !== "claim") {
+      missing.push(id);
+    } else if (allowExplicitConjectures === true && explicitlyUnresolvedConjecture(object)) {
+      excluded.push(id);
+    } else {
+      claims.push(object);
+    }
+  }
+  return { claims, missing, excluded };
+}
+
 function evaluateRule(
   rule: CompletionRule,
   objects: readonly ObjectProjection[],
   edges: readonly EdgeProjection[],
   artifacts: readonly VisibleArtifact[],
+  projectRoot: string,
+  branchId: string,
 ): CompletionRuleResult {
   const types = objectTypeMap(objects);
 
@@ -466,6 +652,224 @@ function evaluateRule(
         { artifactIds: matched.map((artifact) => artifact.artifactId) },
       );
     }
+    case "verification_gate": {
+      const selected = claimsForRule(
+        rule.claimIds,
+        rule.allowExplicitConjectures,
+        objects,
+      );
+      const requiredStatus = rule.requiredStatus ?? "supported";
+      const allowedAssurances = new Set<VerificationAssurance>(
+        rule.allowedAssurances ?? ["support", "machine-checked", "human-reviewed", "formal-kernel"],
+      );
+      const gaps: string[] = selected.missing.map((id) => `${id}:missing-claim`);
+      const evidenceIds: string[] = [];
+      for (const claim of selected.claims) {
+        const contextId = contentRecord(claim)?.contextId;
+        if (typeof contextId !== "string") {
+          gaps.push(`${claim.objectId}:missing-context`);
+          continue;
+        }
+        let profile;
+        try {
+          profile = deriveVerificationProfile(projectRoot, {
+            branchId,
+            claimId: claim.objectId,
+            contextId,
+          });
+        } catch {
+          gaps.push(`${claim.objectId}:invalid-context`);
+          continue;
+        }
+        for (const dimension of rule.dimensions) {
+          const observed = profile.dimensions.find((entry) => entry.dimension === dimension)!;
+          evidenceIds.push(...observed.currentEvidenceObjectIds);
+          const eligible = observed.observations.filter(
+            (observation) =>
+              !observation.stale &&
+              observation.outcome === "passed" &&
+              allowedAssurances.has(observation.assurance),
+          );
+          const passes = requiredStatus === "verified"
+            ? eligible.some((observation) => observation.assurance === "formal-kernel")
+            : eligible.length > 0;
+          if (!passes) {
+            gaps.push(
+              `${claim.objectId}:${dimension}:${observed.status}:no-allowed-assurance`,
+            );
+          }
+        }
+      }
+      const passed = gaps.length === 0;
+      return result(
+        rule,
+        passed,
+        passed
+          ? `All ${selected.claims.length} selected claim(s) satisfy ${rule.dimensions.join(", ")} at ${requiredStatus} status.`
+          : `Verification gaps: ${gaps.sort().join(", ")}.`,
+        {
+          objectIds: [...selected.claims.map((claim) => claim.objectId), ...evidenceIds],
+        },
+      );
+    }
+    case "independent_review": {
+      const selected = claimsForRule(rule.claimIds, rule.allowExplicitConjectures, objects);
+      const gaps: string[] = selected.missing.map((id) => `${id}:missing-claim`);
+      const reviewIds: string[] = [];
+      for (const claim of selected.claims) {
+        const contextId = contentRecord(claim)?.contextId;
+        if (typeof contextId !== "string") {
+          gaps.push(`${claim.objectId}:missing-context`);
+          continue;
+        }
+        const qualifying = objects.filter((object) => {
+          if (object.objectType !== "review") return false;
+          const content = contentRecord(object);
+          const claimRef = content !== undefined && typeof content.claimRef === "object" && content.claimRef !== null
+            ? content.claimRef as Record<string, unknown>
+            : undefined;
+          const contextRef = content !== undefined && typeof content.contextRef === "object" && content.contextRef !== null
+            ? content.contextRef as Record<string, unknown>
+            : undefined;
+          const reviewer = content !== undefined && typeof content.reviewer === "object" && content.reviewer !== null
+            ? content.reviewer as Record<string, unknown>
+            : undefined;
+          const evidenceRefsCurrent = Array.isArray(content?.evidenceRefs) &&
+            content.evidenceRefs.length > 0 &&
+            content.evidenceRefs.every((reference) => {
+              if (typeof reference !== "object" || reference === null || Array.isArray(reference)) {
+                return false;
+              }
+              const ref = reference as Record<string, unknown>;
+              const current = typeof ref.objectId === "string" ? objects.find(
+                (candidate) => candidate.objectId === ref.objectId,
+              ) : undefined;
+              return current?.objectType === "evidence" && current.versionId === ref.versionId;
+            });
+          const sourceRefsCurrent = Array.isArray(content?.sourceRefs) &&
+            content.sourceRefs.every((reference) => {
+              if (typeof reference !== "object" || reference === null || Array.isArray(reference)) {
+                return false;
+              }
+              const ref = reference as Record<string, unknown>;
+              const current = typeof ref.objectId === "string" ? objects.find(
+                (candidate) => candidate.objectId === ref.objectId,
+              ) : undefined;
+              return current?.objectType === "source" && current.versionId === ref.versionId;
+            });
+          return content?.kind === "independent-verification-review" &&
+            content.outcome === "passed" &&
+            evidenceRefsCurrent &&
+            sourceRefsCurrent &&
+            claimRef?.objectId === claim.objectId && claimRef.versionId === claim.versionId &&
+            contextRef?.objectId === contextId &&
+            (rule.requireFreshContext !== true || reviewer?.freshContext === true) &&
+            (rule.requireAdversarial !== true || reviewer?.adversarial === true) &&
+            (rule.requireCrossModelFamily !== true || reviewer?.crossModelFamily === true);
+        });
+        const reviewerIds = new Set(
+          qualifying.flatMap((object) => {
+            const reviewer = contentRecord(object)?.reviewer;
+            return typeof reviewer === "object" && reviewer !== null &&
+              typeof (reviewer as Record<string, unknown>).reviewerId === "string"
+              ? [(reviewer as Record<string, unknown>).reviewerId as string]
+              : [];
+          }),
+        );
+        reviewIds.push(...qualifying.map((review) => review.objectId));
+        if (reviewerIds.size < rule.minReviewers) {
+          gaps.push(`${claim.objectId}:reviewers:${reviewerIds.size}/${rule.minReviewers}`);
+        }
+      }
+      return result(
+        rule,
+        gaps.length === 0,
+        gaps.length === 0
+          ? `Every selected claim has at least ${rule.minReviewers} qualifying independent reviewer(s).`
+          : `Independent review gaps: ${gaps.sort().join(", ")}.`,
+        { objectIds: [...selected.claims.map((claim) => claim.objectId), ...reviewIds] },
+      );
+    }
+    case "review_loop_clear": {
+      const selected = claimsForRule(rule.claimIds, rule.allowExplicitConjectures, objects);
+      const blocked = selected.missing.map((id) => `${id}:missing-claim`);
+      const reviewIds: string[] = [];
+      for (const claim of selected.claims) {
+        const contextId = contentRecord(claim)?.contextId;
+        if (typeof contextId !== "string") {
+          blocked.push(`${claim.objectId}:missing-context`);
+          continue;
+        }
+        const analysis = analyzeReviewLoop(projectRoot, {
+          branchId,
+          claimId: claim.objectId,
+          contextId,
+          ...(rule.repeatedObjectionLimit === undefined ? {} : { repeatedObjectionLimit: rule.repeatedObjectionLimit }),
+          ...(rule.noNewEvidenceLimit === undefined ? {} : { noNewEvidenceLimit: rule.noNewEvidenceLimit }),
+          ...(rule.claimCycleLimit === undefined ? {} : { claimCycleLimit: rule.claimCycleLimit }),
+        });
+        reviewIds.push(...analysis.reviewObjectIds);
+        if (analysis.status !== "clear") {
+          blocked.push(`${claim.objectId}:${analysis.signals.map((signal) => signal.code).join("+")}`);
+        }
+      }
+      return result(
+        rule,
+        blocked.length === 0,
+        blocked.length === 0
+          ? "No selected claim is trapped in a detected review loop."
+          : `Human escalation required: ${blocked.sort().join(", ")}.`,
+        { objectIds: [...selected.claims.map((claim) => claim.objectId), ...reviewIds] },
+      );
+    }
+    case "formal_alignment": {
+      const selected = claimsForRule(rule.claimIds, rule.allowExplicitConjectures, objects);
+      const gaps = selected.missing.map((id) => `${id}:missing-claim`);
+      const alignmentIds: string[] = [];
+      for (const claim of selected.claims) {
+        const matching = objects.filter((object) => {
+          if (object.objectType !== "alignment") return false;
+          const content = contentRecord(object);
+          const informal = content !== undefined && typeof content.informalClaimRef === "object" && content.informalClaimRef !== null
+            ? content.informalClaimRef as Record<string, unknown>
+            : undefined;
+          const formal = content !== undefined && typeof content.formalClaimRef === "object" && content.formalClaimRef !== null
+            ? content.formalClaimRef as Record<string, unknown>
+            : undefined;
+          const evidence = content !== undefined && typeof content.formalEvidenceRef === "object" && content.formalEvidenceRef !== null
+            ? content.formalEvidenceRef as Record<string, unknown>
+            : undefined;
+          const context = content !== undefined && typeof content.contextRef === "object" && content.contextRef !== null
+            ? content.contextRef as Record<string, unknown>
+            : undefined;
+          const currentFormal = typeof formal?.objectId === "string"
+            ? objects.find((candidate) => candidate.objectId === formal.objectId)
+            : undefined;
+          const currentEvidence = typeof evidence?.objectId === "string"
+            ? objects.find((candidate) => candidate.objectId === evidence.objectId)
+            : undefined;
+          const currentContext = typeof context?.objectId === "string"
+            ? objects.find((candidate) => candidate.objectId === context.objectId)
+            : undefined;
+          return content?.kind === "formal-statement-alignment" &&
+            content.outcome === "passed" &&
+            informal?.objectId === claim.objectId && informal.versionId === claim.versionId &&
+            currentFormal?.objectType === "claim" && currentFormal.versionId === formal?.versionId &&
+            currentEvidence?.objectType === "evidence" && currentEvidence.versionId === evidence?.versionId &&
+            currentContext?.objectType === "context" && currentContext.versionId === context?.versionId;
+        });
+        alignmentIds.push(...matching.map((alignment) => alignment.objectId));
+        if (matching.length === 0) gaps.push(`${claim.objectId}:missing-current-alignment`);
+      }
+      return result(
+        rule,
+        gaps.length === 0,
+        gaps.length === 0
+          ? "Every selected informal claim has a current passed formal-statement alignment review."
+          : `Formal alignment gaps: ${gaps.sort().join(", ")}.`,
+        { objectIds: [...selected.claims.map((claim) => claim.objectId), ...alignmentIds] },
+      );
+    }
   }
 }
 
@@ -496,7 +900,7 @@ export async function evaluateCompletionPolicy(
     ? visibleArtifacts(await projectHistory(projectRoot), options.branchId)
     : [];
   const ruleResults = options.policy.rules.map((rule) =>
-    evaluateRule(rule, objects, edges, artifacts),
+    evaluateRule(rule, objects, edges, artifacts, projectRoot, options.branchId),
   );
 
   return {
