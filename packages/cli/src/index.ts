@@ -12,6 +12,7 @@ import { handleObjectsCommand } from "./commands/objects.js";
 import { handlePaperCommand } from "./commands/paper.js";
 import { handleProjectCommand } from "./commands/project.js";
 import { handleWorkstreamCommand } from "./commands/workstream.js";
+import { handleVerificationCommand } from "./commands/verification.js";
 import { formatCliError } from "./errors.js";
 import {
   parseArguments,
@@ -50,6 +51,17 @@ Usage:
       --outcome <outcome> --summary <text> [--branch <id-or-name>]
   rw verification profile <project-dir> <claim-id> --context <context-id>
       [--branch <id-or-name>]
+  rw verification list
+  rw verification run <project-dir> --claim <claim-id> --context <context-id>
+      --verifier <verifier-id> (--input <json> | --input-file <path>)
+      [--artifact <id,...>] [--assumption <id,...>] [--branch <id-or-name>]
+  rw verification packet <project-dir> --claim <claim-id> --context <context-id>
+      [--evidence <id,...>] [--source <id,...>] [--branch <id-or-name>]
+  rw verification review <project-dir> --review-file <path> [--branch <id-or-name>]
+  rw verification loop <project-dir> --claim <claim-id> --context <context-id>
+      [--enforce] [--branch <id-or-name>]
+  rw verification align <project-dir> --alignment-file <path> [--branch <id-or-name>]
+  rw verification recover <project-dir> [--branch <id-or-name>]
   rw paper put <project-dir> (--paper <json> | --paper-file <path>)
       [--paper-id <document-id>] [--branch <id-or-name>]
   rw paper render <project-dir> <paper-id> [--format <markdown|latex>]
@@ -128,6 +140,7 @@ export async function runCli(
     handleBranchCommand,
     handleObjectsCommand,
     handleEvidenceCommand,
+    handleVerificationCommand,
     handlePaperCommand,
     handleGraphCommand,
     handleModelsCommand,

@@ -31,6 +31,7 @@ export const VERIFICATION_DIMENSIONS = [
   "logical",
   "symbolic",
   "numerical",
+  "physical",
   "source",
   "reproducibility",
   "human-review",
@@ -39,9 +40,18 @@ export const VERIFICATION_DIMENSIONS = [
 
 export type VerificationDimension = (typeof VERIFICATION_DIMENSIONS)[number];
 export type VerificationOutcome = "passed" | "failed" | "inconclusive";
+export const VERIFICATION_ASSURANCE_LEVELS = [
+  "reported",
+  "support",
+  "machine-checked",
+  "human-reviewed",
+  "formal-kernel",
+] as const;
+export type VerificationAssurance = (typeof VERIFICATION_ASSURANCE_LEVELS)[number];
 export type VerificationDimensionStatus =
   | "missing"
   | "supported"
+  | "verified"
   | "failed"
   | "inconclusive"
   | "stale";
@@ -203,6 +213,7 @@ export interface VerificationObservation {
   evidenceVersionId: string;
   dimension: VerificationDimension;
   outcome: VerificationOutcome;
+  assurance: VerificationAssurance;
   summary: string;
   artifactId?: string;
   claimVersionId: string;
@@ -1192,6 +1203,7 @@ function renderLatexBlock(
 interface VerificationRecordContent {
   dimension: VerificationDimension;
   outcome: VerificationOutcome;
+  assurance: VerificationAssurance;
   summary: string;
   claimRef: PaperContextReference;
   contextRef: PaperContextReference;
@@ -1202,9 +1214,13 @@ function verificationEvidenceContent(
   object: ObjectProjection,
 ): VerificationRecordContent | undefined {
   if (object.objectType !== "evidence" || !isRecord(object.content)) return undefined;
-  if (object.content.kind !== "artifact-verification-evidence") return undefined;
+  if (
+    object.content.kind !== "artifact-verification-evidence" &&
+    object.content.kind !== "verification-result"
+  ) return undefined;
   const dimension = object.content.dimension;
   const outcome = object.content.outcome;
+  const assurance = object.content.assurance ?? "support";
   const summary = object.content.summary;
   const claimRef = object.content.claimRef;
   const contextRef = object.content.contextRef;
@@ -1213,6 +1229,8 @@ function verificationEvidenceContent(
     !VERIFICATION_DIMENSIONS.includes(dimension as VerificationDimension) ||
     typeof outcome !== "string" ||
     !(["passed", "failed", "inconclusive"] as const).includes(outcome as VerificationOutcome) ||
+    typeof assurance !== "string" ||
+    !VERIFICATION_ASSURANCE_LEVELS.includes(assurance as VerificationAssurance) ||
     typeof summary !== "string" ||
     !isRecord(claimRef) ||
     typeof claimRef.objectId !== "string" ||
@@ -1230,6 +1248,7 @@ function verificationEvidenceContent(
   return {
     dimension: dimension as VerificationDimension,
     outcome: outcome as VerificationOutcome,
+    assurance: assurance as VerificationAssurance,
     summary,
     claimRef: {
       objectId: claimRef.objectId,
@@ -1247,7 +1266,10 @@ function verificationReviewContent(
   object: ObjectProjection,
 ): VerificationRecordContent | undefined {
   if (object.objectType !== "review" || !isRecord(object.content)) return undefined;
-  if (object.content.kind !== "verification-review") return undefined;
+  if (
+    object.content.kind !== "verification-review" &&
+    object.content.kind !== "independent-verification-review"
+  ) return undefined;
   const outcome = object.content.outcome;
   const summary = object.content.summary;
   const claimRef = object.content.claimRef;
@@ -1268,6 +1290,7 @@ function verificationReviewContent(
   return {
     dimension: "human-review",
     outcome: outcome as VerificationOutcome,
+    assurance: "human-reviewed",
     summary,
     claimRef: { objectId: claimRef.objectId, versionId: claimRef.versionId },
     contextRef: { objectId: contextRef.objectId, versionId: contextRef.versionId },
@@ -1309,6 +1332,12 @@ function verificationStatus(
   all: readonly VerificationObservation[],
 ): VerificationDimensionStatus {
   if (current.some((observation) => observation.outcome === "failed")) return "failed";
+  if (
+    current.some(
+      (observation) =>
+        observation.outcome === "passed" && observation.assurance === "formal-kernel",
+    )
+  ) return "verified";
   if (current.some((observation) => observation.outcome === "passed")) return "supported";
   if (current.some((observation) => observation.outcome === "inconclusive")) {
     return "inconclusive";
@@ -1361,6 +1390,7 @@ export function deriveVerificationProfile(
         evidenceVersionId: object.versionId,
         dimension: content.dimension,
         outcome: content.outcome,
+        assurance: content.assurance,
         summary: content.summary,
         ...(content.artifactId === undefined ? {} : { artifactId: content.artifactId }),
         claimVersionId: content.claimRef.versionId,
