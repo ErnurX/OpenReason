@@ -6,6 +6,7 @@ export * from "./event-log.js";
 export * from "./execution.js";
 export * from "./graph.js";
 export * from "./gateway.js";
+export * from "./literature.js";
 export * from "./merge.js";
 export * from "./model.js";
 export * from "./paper.js";

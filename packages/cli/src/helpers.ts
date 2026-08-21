@@ -44,6 +44,7 @@ export interface ParsedArguments {
 }
 
 export const BOOLEAN_OPTIONS = new Set([
+  "allow-network",
   "dry-run",
   "enforce",
   "help",

@@ -17,6 +17,7 @@ normative together with the product contract and system invariants.
 | [0010](0010-stage-6-execution-plane.md) | Stage 6 immutable jobs, local/SSH execution, artifact lineage, and deterministic reuse | Accepted |
 | [0011](0011-stage-7-living-working-paper.md) | Stage 7 typed working papers, exact transclusion, evidence vectors, scoped impact, and semantic comparison | Accepted |
 | [0012](0012-stage-8-verification-plane.md) | Stage 8 typed verifier adapters, independent review, hard gates, loop guards, and formal alignment | Accepted |
+| [0013](0013-stage-9-literature-workspace.md) | Stage 9 portable sources, stable anchors, source-aware search, citation checks, and conservative novelty | Accepted |
 
 ## ADR lifecycle
 

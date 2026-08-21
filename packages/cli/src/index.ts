@@ -7,6 +7,7 @@ import { handleBranchCommand } from "./commands/branch.js";
 import { handleEvidenceCommand } from "./commands/evidence.js";
 import { handleExecutionCommand } from "./commands/execution.js";
 import { handleGraphCommand } from "./commands/graph.js";
+import { handleLiteratureCommand } from "./commands/literature.js";
 import { handleModelsCommand } from "./commands/models.js";
 import { handleObjectsCommand } from "./commands/objects.js";
 import { handlePaperCommand } from "./commands/paper.js";
@@ -69,6 +70,20 @@ Usage:
   rw paper inspect <project-dir> <paper-id> [--branch <id-or-name>]
   rw paper impact <project-dir> <paper-id> --changed <object-id,...>
       [--branch <id-or-name>]
+  rw literature ingest <project-dir> <file> [--metadata-file <path>]
+      [--extracted-text-file <path>] [--kind <kind>] [--branch <id-or-name>]
+  rw literature ingest-folder <project-dir> <folder> [--branch <id-or-name>]
+  rw literature <list|show|open> <project-dir> [<source-id> [<anchor-id>]]
+  rw literature search <project-dir> --query <text>
+      [--mode <lexical|semantic|hybrid|citation>] [--anchor-kind <kind,...>]
+      [--assumption <id,...>] [--seed-source <id,...>] [--limit <n>]
+  rw literature review <project-dir> --source <id> --anchor <id>
+      --outcome <accepted|rejected|revised> --summary <text>
+  rw literature link <project-dir> --from <source-id> --to <source-id>
+  rw literature cite <project-dir> --claim <id> --context <id> --citation-file <path>
+  rw literature novelty <project-dir> --claim <id> --context <id> [--limit <n>]
+  rw literature catalog-search --query <text> --allow-network [--limit <n>]
+  rw literature catalog-ingest <project-dir> --record-file <path>
   rw history <project-dir>
   rw graph query <project-dir> [--branch <id-or-name>]
       [--object-type <type,...>] [--edge-type <type,...>] [--context <id>]
@@ -142,6 +157,7 @@ export async function runCli(
     handleEvidenceCommand,
     handleVerificationCommand,
     handlePaperCommand,
+    handleLiteratureCommand,
     handleGraphCommand,
     handleModelsCommand,
     handleExecutionCommand,
