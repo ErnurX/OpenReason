@@ -2,13 +2,13 @@
 
 OpenReason is an open-source, local-first reasoning workbench for sustained
 mathematical, theoretical-physics, and computational reasoning. The current
-repository implements **Stage 8: Verification Plane** on the canonical
-substrate. Typed verifier adapters bind exact claims, contexts, inputs,
-environments, permissions, and results; independent review, death-spiral
-guards, formal-statement alignment, and executable completion policies can
-refuse premature completion while preserving concrete gaps. It is not yet an
-autonomous scientist, bundled proof kernel, literature system, publication
-system, or graphical workbench.
+repository implements **Stage 9: Literature Workspace** on the canonical
+substrate. Portable sources bind raw artifacts and extraction provenance to
+stable page/theorem anchors; local and catalog search feed exact, reviewed
+citation evidence into the verification plane without inventing truth or
+novelty verdicts. It is not yet an autonomous scientist, bundled proof kernel,
+full PDF/OCR engine, live Zotero client, publication system, or graphical
+workbench.
 
 ## Quick start
 
@@ -51,6 +51,11 @@ pnpm rw execution inspect --job-file ./job.json
 # Author and render a typed paper after filling paper.json with real fixture IDs.
 pnpm rw paper put /tmp/rw-rp001 --paper-file ./paper.json
 pnpm rw paper render /tmp/rw-rp001 <paper-id> --format latex
+
+# Ingest and search local literature; PDF text/page extraction is a sidecar file.
+pnpm rw literature ingest /tmp/rw-rp001 ./paper.pdf \
+  --metadata-file ./metadata.json --extracted-text-file ./paper.pages.txt
+pnpm rw literature search /tmp/rw-rp001 --query "exact theorem" --anchor-kind theorem
 ```
 
 `pnpm run check` runs the TypeScript build check, verifies that the checked-in
@@ -101,6 +106,23 @@ pnpm rw paper render <project-dir> <paper-id> [--format <markdown|latex>]
 pnpm rw paper inspect <project-dir> <paper-id> [--branch <id-or-name>]
 pnpm rw paper impact <project-dir> <paper-id> --changed <object-id,...>
     [--branch <id-or-name>]
+pnpm rw literature ingest <project-dir> <file> [--metadata-file <path>]
+    [--extracted-text-file <path>] [--kind <kind>] [--branch <id-or-name>]
+pnpm rw literature ingest-folder <project-dir> <folder> [--branch <id-or-name>]
+pnpm rw literature list <project-dir> [--branch <id-or-name>]
+pnpm rw literature show <project-dir> <source-id> [--branch <id-or-name>]
+pnpm rw literature open <project-dir> <source-id> <anchor-id> [--branch <id-or-name>]
+pnpm rw literature search <project-dir> --query <text>
+    [--mode <lexical|semantic|hybrid|citation>] [--anchor-kind <kind,...>]
+    [--assumption <id,...>] [--seed-source <id,...>] [--limit <n>]
+pnpm rw literature review <project-dir> --source <id> --anchor <id>
+    --outcome <accepted|rejected|revised> --summary <text>
+pnpm rw literature link <project-dir> --from <source-id> --to <source-id>
+pnpm rw literature cite <project-dir> --claim <id> --context <id>
+    --citation-file <path>
+pnpm rw literature novelty <project-dir> --claim <id> --context <id> [--limit <n>]
+pnpm rw literature catalog-search --query <text> --allow-network [--limit <n>]
+pnpm rw literature catalog-ingest <project-dir> --record-file <path>
 pnpm rw graph query <project-dir> [--branch <id-or-name>]
     [--object-type <type,...>] [--edge-type <type,...>] [--context <id>]
 pnpm rw graph traverse <project-dir> --start <object-id,...>
@@ -229,6 +251,16 @@ gaps, and completion policies can require current evidence, reviewers, clear
 loops, and informal/formal alignment. See
 [ADR-0012](docs/architecture/adr/0012-stage-8-verification-plane.md).
 
+Stage 9 stores each source as a versioned `source` object backed by the normal
+CAS, with exact run/environment/ingestor lineage. Extracted anchors remain
+machine proposals until an exact-version review accepts, rejects, or revises
+them. Search combines lexical, adapter-based semantic, citation-graph, anchor-
+kind, and assumption signals. Source grounding checks location, metadata,
+quotation, assumptions, statement strength, and reviewed support; changing the
+source or anchor makes existing evidence stale. OpenAlex access is deny-by-
+default and requires `--allow-network`; novelty output always requires human
+review. See [ADR-0013](docs/architecture/adr/0013-stage-9-literature-workspace.md).
+
 A minimal local-compatible model declaration is:
 
 ```json
@@ -301,8 +333,10 @@ but it never becomes the only copy of project meaning.
   adapters, capability routing, usage accounting, immutable compute jobs,
   local/SSH execution targets, deterministic artifact reuse, typed working
   papers, Markdown/LaTeX rendering, verifier adapters, independent review,
-  hard verification gates, semantic impact and branch comparison, cleanup,
-  verification, export, and the RP-001 fixture.
+  hard verification gates, portable literature ingestion, exact anchors,
+  source-aware search, citation grounding, conservative novelty, semantic
+  impact and branch comparison, cleanup, verification, export, and the RP-001
+  fixture.
 - `packages/cli` — the `rw` command-line adapter over the project service.
 - `schemas` — schema-generation notes and checked-in public Draft 2020-12
   schemas.
@@ -329,3 +363,4 @@ but it never becomes the only copy of project meaning.
 - [Stage 6 exit](docs/roadmap/stage-6-exit.md)
 - [Stage 7 exit](docs/roadmap/stage-7-exit.md)
 - [Stage 8 exit](docs/roadmap/stage-8-exit.md)
+- [Stage 9 exit](docs/roadmap/stage-9-exit.md)

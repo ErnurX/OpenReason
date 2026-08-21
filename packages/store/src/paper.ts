@@ -218,6 +218,9 @@ export interface VerificationObservation {
   artifactId?: string;
   claimVersionId: string;
   contextVersionId: string;
+  sourceObjectId?: string;
+  sourceVersionId?: string;
+  anchorId?: string;
   stale: boolean;
   staleReasons: string[];
 }
@@ -1208,6 +1211,8 @@ interface VerificationRecordContent {
   claimRef: PaperContextReference;
   contextRef: PaperContextReference;
   artifactId?: string;
+  sourceRef?: PaperContextReference;
+  anchorRef?: { anchorId: string; contentHash: string };
 }
 
 function verificationEvidenceContent(
@@ -1216,7 +1221,8 @@ function verificationEvidenceContent(
   if (object.objectType !== "evidence" || !isRecord(object.content)) return undefined;
   if (
     object.content.kind !== "artifact-verification-evidence" &&
-    object.content.kind !== "verification-result"
+    object.content.kind !== "verification-result" &&
+    object.content.kind !== "source-grounded-evidence"
   ) return undefined;
   const dimension = object.content.dimension;
   const outcome = object.content.outcome;
@@ -1245,6 +1251,18 @@ function verificationEvidenceContent(
   const artifactId = isRecord(artifact) && typeof artifact.artifactId === "string"
     ? artifact.artifactId
     : undefined;
+  const sourceRef = object.content.sourceRef;
+  const anchorRef = object.content.anchorRef;
+  const parsedSourceRef = isRecord(sourceRef) &&
+      typeof sourceRef.objectId === "string" &&
+      typeof sourceRef.versionId === "string"
+    ? { objectId: sourceRef.objectId, versionId: sourceRef.versionId }
+    : undefined;
+  const parsedAnchorRef = isRecord(anchorRef) &&
+      typeof anchorRef.anchorId === "string" &&
+      typeof anchorRef.contentHash === "string"
+    ? { anchorId: anchorRef.anchorId, contentHash: anchorRef.contentHash }
+    : undefined;
   return {
     dimension: dimension as VerificationDimension,
     outcome: outcome as VerificationOutcome,
@@ -1259,6 +1277,8 @@ function verificationEvidenceContent(
       versionId: contextRef.versionId,
     },
     ...(artifactId === undefined ? {} : { artifactId }),
+    ...(parsedSourceRef === undefined ? {} : { sourceRef: parsedSourceRef }),
+    ...(parsedAnchorRef === undefined ? {} : { anchorRef: parsedAnchorRef }),
   };
 }
 
@@ -1385,6 +1405,26 @@ export function deriveVerificationProfile(
       if (!evidenceEdgeIsCurrent(edges, object, claim, context.objectId)) {
         staleReasons.push("exact-version-evidence-edge-missing");
       }
+      const source = content.sourceRef === undefined
+        ? undefined
+        : objects.get(content.sourceRef.objectId);
+      if (
+        content.sourceRef !== undefined &&
+        (source === undefined || source.versionId !== content.sourceRef.versionId)
+      ) {
+        staleReasons.push("source-version-changed");
+      }
+      if (content.anchorRef !== undefined && source !== undefined) {
+        const sourceAnchors = isRecord(source.content) && Array.isArray(source.content.anchors)
+          ? source.content.anchors
+          : [];
+        const anchorCurrent = sourceAnchors.some((candidate) =>
+          isRecord(candidate) &&
+          candidate.anchorId === content.anchorRef!.anchorId &&
+          candidate.contentHash === content.anchorRef!.contentHash
+        );
+        if (!anchorCurrent) staleReasons.push("source-anchor-changed");
+      }
       return {
         evidenceObjectId: object.objectId,
         evidenceVersionId: object.versionId,
@@ -1395,6 +1435,11 @@ export function deriveVerificationProfile(
         ...(content.artifactId === undefined ? {} : { artifactId: content.artifactId }),
         claimVersionId: content.claimRef.versionId,
         contextVersionId: content.contextRef.versionId,
+        ...(content.sourceRef === undefined ? {} : {
+          sourceObjectId: content.sourceRef.objectId,
+          sourceVersionId: content.sourceRef.versionId,
+        }),
+        ...(content.anchorRef === undefined ? {} : { anchorId: content.anchorRef.anchorId }),
         stale: staleReasons.length > 0,
         staleReasons,
       };
