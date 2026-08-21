@@ -65,6 +65,7 @@ describe("Reasoning Workbench CLI", () => {
 
     expect(io.stdoutText()).toContain("Reasoning Workbench local reasoning runtime");
     expect(io.stdoutText()).toContain("rw fixture rp001 <project-dir>");
+    expect(io.stdoutText()).toContain("rw workbench <project-dir>");
     expect(io.stderrText()).toBe("");
   });
 
@@ -964,4 +965,3 @@ describe("Reasoning Workbench CLI", () => {
     expect(cleanupIo.stdoutText()).toContain("Total Files Cleaned:    0");
   });
 });
-

@@ -15,6 +15,7 @@ import { handlePaperCommand } from "./commands/paper.js";
 import { handleProjectCommand } from "./commands/project.js";
 import { handleWorkstreamCommand } from "./commands/workstream.js";
 import { handleVerificationCommand } from "./commands/verification.js";
+import { handleWorkbenchCommand } from "./commands/workbench.js";
 import { formatCliError } from "./errors.js";
 import {
   parseArguments,
@@ -36,6 +37,7 @@ const HELP = `Reasoning Workbench local reasoning runtime
 Usage:
   rw init <project-dir> --title <title>
   rw info <project-dir>
+  rw workbench <project-dir> [--port <port>] [--no-open]
   rw branch create <project-dir> <name> [--from <branch-id-or-name>]
   rw branch diff <project-dir> <source> <target>
   rw branch semantic-diff <project-dir> <source> <target>
@@ -166,6 +168,7 @@ export async function runCli(
 
   const handlers = [
     handleProjectCommand,
+    handleWorkbenchCommand,
     handleDomainCommand,
     handleBranchCommand,
     handleObjectsCommand,

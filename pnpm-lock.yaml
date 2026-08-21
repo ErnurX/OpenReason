@@ -29,6 +29,9 @@ importers:
       '@reasoning-workbench/store':
         specifier: workspace:*
         version: link:../store
+      '@reasoning-workbench/workbench':
+        specifier: workspace:*
+        version: link:../workbench
 
   packages/project-format:
     dependencies:
@@ -41,6 +44,15 @@ importers:
       '@reasoning-workbench/project-format':
         specifier: workspace:*
         version: link:../project-format
+
+  packages/workbench:
+    dependencies:
+      '@reasoning-workbench/project-format':
+        specifier: workspace:*
+        version: link:../project-format
+      '@reasoning-workbench/store':
+        specifier: workspace:*
+        version: link:../store
 
 packages:
 

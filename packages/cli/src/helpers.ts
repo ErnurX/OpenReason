@@ -50,6 +50,7 @@ export const BOOLEAN_OPTIONS = new Set([
   "help",
   "human",
   "json",
+  "no-open",
   "remove-orphans",
   "require-tool-use",
   "unsafe-process-only",

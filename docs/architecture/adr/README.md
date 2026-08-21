@@ -19,6 +19,7 @@ normative together with the product contract and system invariants.
 | [0012](0012-stage-8-verification-plane.md) | Stage 8 typed verifier adapters, independent review, hard gates, loop guards, and formal alignment | Accepted |
 | [0013](0013-stage-9-literature-workspace.md) | Stage 9 portable sources, stable anchors, source-aware search, citation checks, and conservative novelty | Accepted |
 | [0014](0014-stage-10-domain-packs.md) | Stage 10 provider-neutral domain packs, templates, adapter authorization, reference acceptance, and research packages | Accepted |
+| [0015](0015-loopback-workbench-shell.md) | Token-authenticated loopback workbench shell over canonical store services | Accepted |
 
 ## ADR lifecycle
 

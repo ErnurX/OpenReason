@@ -8,8 +8,7 @@
   },
   "references": [
     { "path": "../project-format" },
-    { "path": "../store" },
-    { "path": "../workbench" }
+    { "path": "../store" }
   ],
   "include": ["src/**/*.ts"]
 }

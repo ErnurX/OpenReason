@@ -5,10 +5,11 @@ mathematical, theoretical-physics, and computational reasoning. The current
 repository implements **Stage 10: Domain Packs** on the canonical substrate.
 Pure Mathematics, Theoretical Physics, and Computational Reasoning add strict
 semantic/adapter manifests and seven project templates without coupling core to
-one engine. RP-001, RP-002, and RP-003 now pass machine-derived acceptance and
-export hashed research packages. It is not yet an autonomous scientist,
-bundled domain-engine distribution, collaborative server, or graphical
-workbench.
+one engine. RP-001, RP-002, and RP-003 pass machine-derived acceptance and
+export hashed research packages. A dependency-light local browser workbench
+now provides the first graphical project surface. It is not yet an autonomous
+scientist, bundled domain-engine distribution, collaborative server, or native
+Tauri distribution.
 
 ## Quick start
 
@@ -25,6 +26,9 @@ pnpm rw --help
 pnpm rw init /tmp/rw-demo --title "Demo investigation"
 pnpm rw info /tmp/rw-demo
 pnpm rw verify /tmp/rw-demo
+
+# Open the token-authenticated, loopback-only local workbench.
+pnpm rw workbench /tmp/rw-demo
 
 # Query the branch graph.
 pnpm rw graph query /tmp/rw-demo
@@ -77,6 +81,7 @@ Commands emit JSON by default. Commands with a compact formatter also accept
 ```text
 pnpm rw init <project-dir> --title <title>
 pnpm rw info <project-dir>
+pnpm rw workbench <project-dir> [--port <port>] [--no-open]
 pnpm rw branch create <project-dir> <name> [--from <branch-id-or-name>]
 pnpm rw branch diff <project-dir> <source> <target>
 pnpm rw branch semantic-diff <project-dir> <source> <target>
@@ -200,6 +205,15 @@ fresh projection replay. `export` first verifies the source and copies only
 canonical state to an empty directory. The exported package contains no
 `.reasoning/`; `info` or the next typed mutation rebuilds its SQLite projection
 when it is opened.
+
+`workbench` always binds `127.0.0.1` and uses a fresh bearer token per launch.
+The token-authenticated browser shell reads projections and writes only through
+the typed store; tabs, filters, and selections are not project state. It can
+create an isolated branch and common typed project objects without JSON. This
+is a local administrative surface, not remote authentication, an execution
+sandbox, or a packaged Tauri application. See
+[ADR-0015](docs/architecture/adr/0015-loopback-workbench-shell.md) and the
+[workbench acceptance notes](docs/roadmap/stage-2-workbench.md).
 
 Graph query, traversal, impact, staleness, and policy evaluation are derived
 reads. A safe merge is an explicit direct-child-to-parent operation: clean
