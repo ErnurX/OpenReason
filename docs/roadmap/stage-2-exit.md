@@ -72,18 +72,20 @@ pnpm run check
   head locking.
 - `BranchMerged` is canonical; graph indexes and SQLite state remain disposable
   derived data and are excluded from export.
-- There is no agent scheduler, model-provider loop, execution fabric,
-  notebook/kernel integration, proof-assistant adapter, literature ingestion,
-  desktop UI, or hosted collaboration service.
+- The Stage 2 reasoning service itself does not own an agent scheduler,
+  model-provider loop, execution fabric, notebook/kernel integration,
+  proof-assistant adapter, literature ingestion, or hosted collaboration
+  service. The later local workbench slice consumes these typed services
+  without changing their semantics; see `stage-2-workbench.md`.
 - Passing `rw verify` establishes structural integrity and replay equivalence.
   Passing a completion policy establishes only that its declared structural
   rules hold. Neither result proves a mathematical or physical claim.
 
 ## Next proposed stage
 
-The next stage should add branch-scoped workstream execution and typed tool
-contracts only after defining authorization, cancellation, recovery, budgets,
-and durable run provenance. A UI can then consume the same services without
-making view state canonical. General merge, snapshots, compaction, and format
-migration remain separate engineering tracks rather than implicit Stage 2
-claims.
+The next service stage added branch-scoped workstream execution and typed tool
+contracts after defining authorization, cancellation, recovery, budgets, and
+durable run provenance. The local workbench now consumes the same services
+without making view state canonical. General merge, snapshots, compaction, and
+format migration remain separate engineering tracks rather than implicit Stage
+2 claims.
