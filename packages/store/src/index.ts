@@ -11,6 +11,7 @@ export * from "./literature.js";
 export * from "./merge.js";
 export * from "./model.js";
 export * from "./paper.js";
+export * from "./publication.js";
 export * from "./policy.js";
 export * from "./projection.js";
 export * from "./providers.js";

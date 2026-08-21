@@ -12,6 +12,7 @@ import { handleLiteratureCommand } from "./commands/literature.js";
 import { handleModelsCommand } from "./commands/models.js";
 import { handleObjectsCommand } from "./commands/objects.js";
 import { handlePaperCommand } from "./commands/paper.js";
+import { handlePublicationCommand } from "./commands/publication.js";
 import { handleProjectCommand } from "./commands/project.js";
 import { handleWorkstreamCommand } from "./commands/workstream.js";
 import { handleVerificationCommand } from "./commands/verification.js";
@@ -100,6 +101,14 @@ Usage:
       [--branch <id-or-name>]
   rw research-package build <project-dir> <destination-dir>
       --reference <RP-001|RP-002|RP-003> [--branch <id-or-name>]
+  rw publication attribute <project-dir> --label <release-label> --actor-id <actor-id>
+      [--branch <id-or-name>]
+  rw publication check <project-dir> --reference <RP-001|RP-002|RP-003>
+      [--branch <id-or-name>]
+  rw publication build <project-dir> <destination-dir> --reference <RP-001|RP-002|RP-003>
+      [--branch <id-or-name>]
+  rw publication inspect <release-dir>
+  rw publication reproduce <release-dir>
   rw history <project-dir>
   rw graph query <project-dir> [--branch <id-or-name>]
       [--object-type <type,...>] [--edge-type <type,...>] [--context <id>]
@@ -170,6 +179,7 @@ export async function runCli(
     handleProjectCommand,
     handleWorkbenchCommand,
     handleDomainCommand,
+    handlePublicationCommand,
     handleBranchCommand,
     handleObjectsCommand,
     handleEvidenceCommand,
