@@ -20,6 +20,7 @@ normative together with the product contract and system invariants.
 | [0013](0013-stage-9-literature-workspace.md) | Stage 9 portable sources, stable anchors, source-aware search, citation checks, and conservative novelty | Accepted |
 | [0014](0014-stage-10-domain-packs.md) | Stage 10 provider-neutral domain packs, templates, adapter authorization, reference acceptance, and research packages | Accepted |
 | [0015](0015-loopback-workbench-shell.md) | Token-authenticated loopback workbench shell over canonical store services | Accepted |
+| [0016](0016-stage-11-collaboration-rbac.md) | Stage 11 canonical collaboration, version-bound review, deny-by-default roles, and explicit merge authority | Accepted |
 
 ## ADR lifecycle
 
