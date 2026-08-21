@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 
 import { handleAgentCommand } from "./commands/agent.js";
 import { handleBranchCommand } from "./commands/branch.js";
+import { handleCollaborationCommand } from "./commands/collaboration.js";
 import { handleDomainCommand } from "./commands/domain.js";
 import { handleEvidenceCommand } from "./commands/evidence.js";
 import { handleExecutionCommand } from "./commands/execution.js";
@@ -42,6 +43,25 @@ Usage:
   rw branch diff <project-dir> <source> <target>
   rw branch semantic-diff <project-dir> <source> <target>
   rw branch merge <project-dir> <source> <target>
+  rw collab bootstrap <project-dir> --actor <human-actor-id>
+  rw collab members <project-dir> --actor <human-actor-id>
+  rw collab comments <project-dir> --actor <human-actor-id>
+  rw collab reviews <project-dir> --actor <human-actor-id>
+  rw collab decisions <project-dir> --actor <human-actor-id>
+  rw collab replay <project-dir> --actor <human-actor-id>
+  rw collab member add <project-dir> --actor <owner-id> --member <human-actor-id>
+      --role <owner|researcher|contributor|reviewer|compute-operator|viewer> --reason <text>
+  rw collab comment <project-dir> --actor <human-actor-id> --object <id> --version <id>
+      --body <text> [--branch <id-or-name>]
+  rw collab request-review <project-dir> --actor <human-actor-id> --statement <claim-id>
+      --statement-version <version-id> --evidence <evidence-id@version-id,...> --summary <text>
+      [--branch <id-or-name>]
+  rw collab decide-review <project-dir> --actor <reviewer-id> --review <id>
+      --outcome <approved|rejected> --rationale <text>
+  rw collab authorize-merge <project-dir> --actor <owner-id> --subject <human-actor-id>
+      --source <id-or-name> --target <id-or-name> --reason <text>
+  rw collab merge <project-dir> --actor <human-actor-id> --authorization <id>
+      --source <id-or-name> --target <id-or-name>
   rw object put <project-dir> --type <type> [--branch <id-or-name>]
       (--content <json> | --content-file <path>) [--object-id <id>]
   rw edge add <project-dir> --type <type> --from <object-id> --to <object-id>
@@ -169,6 +189,7 @@ export async function runCli(
   const handlers = [
     handleProjectCommand,
     handleWorkbenchCommand,
+    handleCollaborationCommand,
     handleDomainCommand,
     handleBranchCommand,
     handleObjectsCommand,

@@ -105,6 +105,8 @@ export interface CreateBranchOptions {
   name: string;
   baseBranchId?: string;
   actor?: Actor;
+  /** Optional optimistic precondition; unlike legacy calls, never auto-retries. */
+  expectedHead?: ProjectEventHead;
 }
 
 export interface PutObjectOptions {
@@ -114,7 +116,17 @@ export interface PutObjectOptions {
   actor?: Actor;
   objectId?: string;
   extensions?: Record<string, unknown>;
+  /** Optional optimistic precondition; unlike legacy calls, never auto-retries. */
+  expectedHead?: ProjectEventHead;
 }
+
+/** The accepted event tail observed by a transport before authorizing a write. */
+export interface ProjectEventHead {
+  readonly sequence: number;
+  readonly eventHash: string;
+}
+
+export class ProjectConcurrencyError extends Error {}
 
 export interface AddEdgeOptions {
   branchId: string;
@@ -127,6 +139,8 @@ export interface AddEdgeOptions {
   metadata?: Record<string, unknown>;
   actor?: Actor;
   extensions?: Record<string, unknown>;
+  /** Optional optimistic precondition; unlike legacy calls, never auto-retries. */
+  expectedHead?: ProjectEventHead;
 }
 
 export interface RegisterArtifactOptions {
@@ -303,6 +317,56 @@ async function ensureProjection(
   return rebuildProjection(root);
 }
 
+/**
+ * Refreshes the disposable projection from one accepted-history snapshot and
+ * proves that the snapshot is still the canonical tail before a caller uses
+ * projection-backed visibility or branch-head data.  Callers that authorize a
+ * write pass their previously observed head so a concurrent canonical write
+ * becomes a retryable conflict instead of a silent rebase.
+ */
+export async function ensureProjectionAtHead(
+  projectRoot: string,
+  expectedHead?: ProjectEventHead,
+): Promise<ProjectEventHead> {
+  const root = resolve(projectRoot);
+  const manifest = await loadManifest(root);
+  const observedEvents = await readAcceptedEvents(root, manifest);
+  const observedTail = observedEvents.at(-1);
+  if (observedTail === undefined) {
+    throw new Error("Project has no accepted event head");
+  }
+  const observedHead: ProjectEventHead = {
+    sequence: observedTail.sequence,
+    eventHash: observedTail.eventHash,
+  };
+  if (
+    expectedHead !== undefined &&
+    (expectedHead.sequence !== observedHead.sequence || expectedHead.eventHash !== observedHead.eventHash)
+  ) {
+    throw new ProjectConcurrencyError("Project head changed; re-authorize and retry");
+  }
+
+  await ensureProjection(root, manifest);
+
+  // A canonical writer can win while rebuilding the cache. Never return the
+  // older cache as the basis for an authorization, anchor, or branch-head
+  // decision; the caller must retry against that newer accepted tail.
+  const confirmedManifest = await loadManifest(root);
+  const confirmedEvents = await readAcceptedEvents(root, confirmedManifest);
+  const confirmedTail = confirmedEvents.at(-1);
+  if (
+    confirmedTail === undefined ||
+    confirmedTail.sequence !== observedHead.sequence ||
+    confirmedTail.eventHash !== observedHead.eventHash
+  ) {
+    throw new ProjectConcurrencyError("Project head changed; re-authorize and retry");
+  }
+  if (getProjectProjection(root).lastSequence !== observedHead.sequence) {
+    throw new ProjectConcurrencyError("Projection is not current for the accepted event head");
+  }
+  return observedHead;
+}
+
 function createProjectEvent(
   manifest: ProjectManifest,
   previousEvents: readonly Event[],
@@ -333,12 +397,20 @@ async function appendProjectEvent(
   payload: Record<string, unknown>,
   actor: Actor,
   branchId?: string,
+  expectedHead?: ProjectEventHead,
 ): Promise<Event> {
   // Event-log locking is authoritative. Retrying handles the benign race in
   // which another writer wins after we read the current tail.
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < (expectedHead === undefined ? 3 : 1); attempt += 1) {
     const manifest = await loadManifest(projectRoot);
     const previousEvents = await readAcceptedEvents(projectRoot, manifest);
+    const previous = previousEvents.at(-1);
+    if (
+      expectedHead !== undefined &&
+      (previous?.sequence !== expectedHead.sequence || previous.eventHash !== expectedHead.eventHash)
+    ) {
+      throw new ProjectConcurrencyError("Project head changed; re-authorize and retry");
+    }
     const event = createProjectEvent(
       manifest,
       previousEvents,
@@ -354,6 +426,11 @@ async function appendProjectEvent(
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const sequenceRace = /sequence|previousEventHash|tail/i.test(message);
+      if (sequenceRace && expectedHead !== undefined) {
+        throw new ProjectConcurrencyError("Project head changed; re-authorize and retry", {
+          cause: error,
+        });
+      }
       if (!sequenceRace || attempt === 2) throw error;
     }
   }
@@ -457,6 +534,7 @@ export async function createBranch(
     { branchId, name: options.name, baseBranchId },
     checkedActor(options.actor),
     branchId,
+    options.expectedHead,
   );
   const branch = listBranches(root).find((candidate) => candidate.branchId === branchId);
   if (branch === undefined) throw new Error(`Branch was not projected: ${branchId}`);
@@ -513,6 +591,7 @@ export async function putObject(
     { object: envelope },
     actor,
     options.branchId,
+    options.expectedHead,
   );
   return envelope;
 }
@@ -588,6 +667,7 @@ export async function addEdge(
     { edge },
     actor,
     options.branchId,
+    options.expectedHead,
   );
   return edge;
 }

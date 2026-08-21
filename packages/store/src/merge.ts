@@ -5,7 +5,10 @@ import {
   canonicalJson,
   createEvent,
   createId,
+  createObjectVersion,
+  utcNow,
   type Actor,
+  type CanonicalId,
   type EdgeEnvelope,
   type Event,
   type JsonValue,
@@ -13,12 +16,12 @@ import {
   type Sha256Digest,
 } from "@reasoning-workbench/project-format";
 
-import { appendEvent, readAcceptedEvents } from "./event-log.js";
+import { appendEventsBatch, readAcceptedEvents } from "./event-log.js";
 import {
-  addEdge,
+  ProjectConcurrencyError,
+  ensureProjectionAtHead,
   loadManifest,
   projectHistory,
-  putObject,
 } from "./project.js";
 import { listBranches, rebuildProjection } from "./projection.js";
 
@@ -66,7 +69,16 @@ export interface SafeMergeResult extends BranchDiff {
 interface MergeAnalysis {
   diff: BranchDiff;
   sourceView: BranchView;
+  targetView: BranchView;
 }
+
+export interface MergeExpectedHead {
+  readonly sequence: number;
+  readonly eventHash: string;
+}
+
+/** A concurrent canonical write invalidated a prepared merge. */
+export class MergeConcurrencyError extends Error {}
 
 const SYSTEM_ACTOR: Actor = ActorSchema.parse({
   actorType: "system",
@@ -301,6 +313,7 @@ async function analyzeMerge(
         .sort(),
     },
     sourceView,
+    targetView,
   };
 }
 
@@ -309,6 +322,7 @@ export async function diffBranches(
   sourceBranchId: string,
   targetBranchId: string,
 ): Promise<BranchDiff> {
+  await ensureProjectionAtHead(projectRoot);
   return (await analyzeMerge(projectRoot, sourceBranchId, targetBranchId)).diff;
 }
 
@@ -350,29 +364,117 @@ function mergeEdgeExtensions(
   return extensions;
 }
 
-async function appendBranchMerged(
-  projectRoot: string,
+function asJsonValue(value: unknown): JsonValue {
+  canonicalJson(value);
+  return value as JsonValue;
+}
+
+function nextEvent(
+  previous: Event,
+  projectId: CanonicalId,
+  branchId: string,
   actor: Actor,
-  targetBranchId: string,
-  payload: Record<string, unknown>,
-): Promise<Event> {
-  const manifest = await loadManifest(projectRoot);
-  const events = await readAcceptedEvents(projectRoot, manifest);
-  const previous = events.at(-1);
-  const event = createEvent({
-    sequence: (previous?.sequence ?? 0) + 1,
-    eventType: "BranchMerged",
-    projectId: manifest.projectId,
-    branchId: targetBranchId,
+  eventType: string,
+  payload: Record<string, JsonValue>,
+): Event {
+  return createEvent({
+    sequence: previous.sequence + 1,
+    eventType,
+    projectId,
+    branchId: branchId as CanonicalId,
     actor,
-    payload: payload as Record<string, JsonValue>,
-    ...(previous === undefined
-      ? {}
-      : { previousEventHash: previous.eventHash as Sha256Digest }),
+    payload,
+    previousEventHash: previous.eventHash as Sha256Digest,
   });
-  const appended = await appendEvent(projectRoot, event);
-  await rebuildProjection(projectRoot);
-  return appended.event;
+}
+
+function mergedObject(
+  source: ObjectEnvelope,
+  selectedTarget: ObjectEnvelope | undefined,
+  targetBranchId: string,
+  actor: Actor,
+  sourceBranchId: string,
+  mergeId: string,
+): ObjectEnvelope {
+  const created = createObjectVersion({
+    objectId: source.objectId as CanonicalId,
+    objectType: source.objectType,
+    branchId: targetBranchId as CanonicalId,
+    createdBy: actor,
+    content: source.content,
+    version: (selectedTarget?.version ?? 0) + 1,
+    ...(selectedTarget === undefined
+      ? {}
+      : { supersedesVersionId: selectedTarget.versionId as CanonicalId }),
+  });
+  return ObjectEnvelopeSchema.parse({
+    ...created,
+    ...mergeExtensions(source, sourceBranchId, mergeId),
+  });
+}
+
+function mergeConflictFailure(
+  conflict: ObjectDiff,
+  targetBranchId: string,
+  actor: Actor,
+  sourceBranchId: string,
+  mergeId: string,
+): ObjectEnvelope {
+  return ObjectEnvelopeSchema.parse({
+    ...createObjectVersion({
+      objectType: "failure",
+      branchId: targetBranchId as CanonicalId,
+      createdBy: actor,
+      content: {
+        kind: "merge-conflict",
+        status: "open",
+        mergeId,
+        sourceBranchId,
+        targetBranchId,
+        objectId: conflict.objectId,
+        ...(conflict.baseVersionId === undefined
+          ? {}
+          : { baseVersionId: conflict.baseVersionId }),
+        ...(conflict.sourceVersionId === undefined
+          ? {}
+          : { sourceVersionId: conflict.sourceVersionId }),
+        ...(conflict.targetVersionId === undefined
+          ? {}
+          : { targetVersionId: conflict.targetVersionId }),
+        reason: "Both branches changed the same object to different content",
+      },
+    }),
+    "x-rw:merge": { mergeId },
+  });
+}
+
+function mergedEdge(
+  source: EdgeEnvelope,
+  targetObjects: ReadonlyMap<string, ObjectEnvelope>,
+  targetBranchId: string,
+  actor: Actor,
+  sourceBranchId: string,
+  mergeId: string,
+): EdgeEnvelope {
+  const from = targetObjects.get(source.from.objectId);
+  const to = targetObjects.get(source.to.objectId);
+  if (from === undefined || to === undefined) {
+    throw new Error(`Source edge ${source.edgeId} has an endpoint not visible after merge`);
+  }
+  if (source.contextId !== undefined && targetObjects.get(source.contextId)?.objectType !== "context") {
+    throw new Error(`Source edge ${source.edgeId} has a context not visible after merge`);
+  }
+  return EdgeEnvelopeSchema.parse({
+    edgeId: createId("edg"),
+    edgeType: source.edgeType,
+    from: { objectId: from.objectId, versionId: from.versionId },
+    to: { objectId: to.objectId, versionId: to.versionId },
+    ...(source.contextId === undefined ? {} : { contextId: source.contextId }),
+    createdAt: utcNow(),
+    createdBy: actor,
+    metadata: source.metadata,
+    ...mergeEdgeExtensions(source, sourceBranchId, mergeId),
+  });
 }
 
 export async function mergeBranchSafe(
@@ -381,124 +483,127 @@ export async function mergeBranchSafe(
     sourceBranchId: string;
     targetBranchId: string;
     actor?: Actor;
+    /** Fail rather than rebase when canonical history changed after authorization. */
+    expectedHead?: MergeExpectedHead;
+    /** Adds a one-shot collaboration consumption event in the same atomic batch. */
+    collaborationAuthorizationId?: string;
   },
 ): Promise<SafeMergeResult> {
   const actor = ActorSchema.parse(options.actor ?? SYSTEM_ACTOR);
-  const analysis = await analyzeMerge(
-    projectRoot,
-    options.sourceBranchId,
-    options.targetBranchId,
-  );
+  let preparedHead: MergeExpectedHead;
+  try {
+    preparedHead = await ensureProjectionAtHead(projectRoot, options.expectedHead);
+  } catch (error) {
+    if (error instanceof ProjectConcurrencyError) {
+      throw new MergeConcurrencyError("Project head changed; re-evaluate merge authorization", { cause: error });
+    }
+    throw error;
+  }
+  const analysis = await analyzeMerge(projectRoot, options.sourceBranchId, options.targetBranchId);
   const branches = listBranches(projectRoot);
-  const source = branches.find(
-    (branch) => branch.branchId === options.sourceBranchId,
-  )!;
-  const target = branches.find(
-    (branch) => branch.branchId === options.targetBranchId,
-  )!;
+  const source = branches.find((branch) => branch.branchId === options.sourceBranchId)!;
+  const target = branches.find((branch) => branch.branchId === options.targetBranchId)!;
+  const manifest = await loadManifest(projectRoot);
+  const history = await readAcceptedEvents(projectRoot, manifest);
+  const initialTail = history.at(-1);
+  if (initialTail === undefined) throw new Error("Cannot merge a project with no event head");
+  if (
+    (preparedHead.sequence !== initialTail.sequence || preparedHead.eventHash !== initialTail.eventHash)
+  ) {
+    throw new MergeConcurrencyError("Project head changed; re-evaluate merge authorization");
+  }
+
   const mergeId = createId("mrg");
-  const conflicts = analysis.diff.objectChanges.filter(
-    (change) => change.status === "conflict",
-  );
+  const conflicts = analysis.diff.objectChanges.filter((change) => change.status === "conflict");
   const appliedObjectVersionIds: string[] = [];
   const conflictObjectIds: string[] = [];
-  let adoptedEdgeIds: string[] = [];
-  let status: "merged" | "conflicted" = "merged";
+  const adoptedEdgeIds: string[] = [];
+  const targetObjects = new Map(analysis.targetView.objects);
+  const stagedEvents: Event[] = [];
+  let tail = initialTail;
+  const stage = (eventType: string, payload: Record<string, JsonValue>): Event => {
+    const event = nextEvent(tail, manifest.projectId, options.targetBranchId, actor, eventType, payload);
+    tail = event;
+    stagedEvents.push(event);
+    return event;
+  };
 
+  let status: "merged" | "conflicted" = "merged";
   if (conflicts.length > 0) {
     status = "conflicted";
     for (const conflict of conflicts) {
-      const failure = await putObject(projectRoot, {
-        branchId: options.targetBranchId,
-        objectType: "failure",
-        actor,
-        content: {
-          kind: "merge-conflict",
-          status: "open",
-          mergeId,
-          sourceBranchId: options.sourceBranchId,
-          targetBranchId: options.targetBranchId,
-          objectId: conflict.objectId,
-          ...(conflict.baseVersionId === undefined
-            ? {}
-            : { baseVersionId: conflict.baseVersionId }),
-          ...(conflict.sourceVersionId === undefined
-            ? {}
-            : { sourceVersionId: conflict.sourceVersionId }),
-          ...(conflict.targetVersionId === undefined
-            ? {}
-            : { targetVersionId: conflict.targetVersionId }),
-          reason: "Both branches changed the same object to different content",
-        },
-        extensions: { "x-rw:merge": { mergeId } },
-      });
+      const failure = mergeConflictFailure(conflict, options.targetBranchId, actor, options.sourceBranchId, mergeId);
       conflictObjectIds.push(failure.objectId);
+      targetObjects.set(failure.objectId, failure);
+      stage("ObjectVersionCreated", { object: asJsonValue(failure) });
     }
   } else {
     for (const change of analysis.diff.objectChanges) {
       if (change.status !== "source-only") continue;
       const sourceObject = analysis.sourceView.objects.get(change.objectId);
-      if (sourceObject === undefined) {
-        throw new Error(`Stage 2 does not support object deletion: ${change.objectId}`);
-      }
-      const applied = await putObject(projectRoot, {
-        branchId: options.targetBranchId,
-        objectId: sourceObject.objectId,
-        objectType: sourceObject.objectType,
-        content: sourceObject.content,
+      if (sourceObject === undefined) throw new Error(`Stage 2 does not support object deletion: ${change.objectId}`);
+      const applied = mergedObject(
+        sourceObject,
+        targetObjects.get(sourceObject.objectId),
+        options.targetBranchId,
         actor,
-        extensions: mergeExtensions(
-          sourceObject,
-          options.sourceBranchId,
-          mergeId,
-        ),
-      });
+        options.sourceBranchId,
+        mergeId,
+      );
       appliedObjectVersionIds.push(applied.versionId);
+      targetObjects.set(applied.objectId, applied);
+      stage("ObjectVersionCreated", { object: asJsonValue(applied) });
     }
     for (const sourceEdgeId of analysis.diff.sourceOnlyEdgeIds) {
       const sourceEdge = analysis.sourceView.edges.get(sourceEdgeId);
-      if (sourceEdge === undefined) {
-        throw new Error(`Source edge disappeared during merge: ${sourceEdgeId}`);
-      }
-      const adopted = await addEdge(projectRoot, {
-        branchId: options.targetBranchId,
-        edgeType: sourceEdge.edgeType,
-        fromObjectId: sourceEdge.from.objectId,
-        toObjectId: sourceEdge.to.objectId,
-        ...(sourceEdge.contextId === undefined
-          ? {}
-          : { contextId: sourceEdge.contextId }),
-        metadata: sourceEdge.metadata,
+      if (sourceEdge === undefined) throw new Error(`Source edge disappeared during merge: ${sourceEdgeId}`);
+      const adopted = mergedEdge(
+        sourceEdge,
+        targetObjects,
+        options.targetBranchId,
         actor,
-        extensions: mergeEdgeExtensions(
-          sourceEdge,
-          options.sourceBranchId,
-          mergeId,
-        ),
-      });
+        options.sourceBranchId,
+        mergeId,
+      );
       adoptedEdgeIds.push(adopted.edgeId);
+      stage("EdgeCreated", { edge: asJsonValue(adopted) });
     }
   }
 
-  const event = await appendBranchMerged(
-    projectRoot,
-    actor,
-    options.targetBranchId,
-    {
+  if (options.collaborationAuthorizationId !== undefined) {
+    stage("CollaborationMergeAuthorizationConsumed", {
+      authorizationId: options.collaborationAuthorizationId,
       mergeId,
       sourceBranchId: options.sourceBranchId,
       targetBranchId: options.targetBranchId,
-      baseSequence: source.baseSequence,
-      sourceHeadSequence: source.headSequence,
-      targetHeadSequenceBefore: target.headSequence,
-      strategy: "safe",
-      status,
-      appliedObjectVersionIds,
-      adoptedEdgeIds,
-      conflictObjectIds,
-    },
-  );
-
+    });
+  }
+  const event = stage("BranchMerged", {
+    mergeId,
+    sourceBranchId: options.sourceBranchId,
+    targetBranchId: options.targetBranchId,
+    baseSequence: source.baseSequence,
+    sourceHeadSequence: source.headSequence,
+    targetHeadSequenceBefore: target.headSequence,
+    strategy: "safe",
+    status,
+    appliedObjectVersionIds,
+    adoptedEdgeIds,
+    conflictObjectIds,
+    ...(options.collaborationAuthorizationId === undefined
+      ? {}
+      : { "x-rw:collaboration": { authorizationId: options.collaborationAuthorizationId } }),
+  });
+  try {
+    await appendEventsBatch(projectRoot, stagedEvents);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/sequence|previousEventHash|tail|next accepted/i.test(message)) {
+      throw new MergeConcurrencyError("Project head changed; re-evaluate merge authorization", { cause: error });
+    }
+    throw error;
+  }
+  await rebuildProjection(projectRoot);
   return {
     ...analysis.diff,
     mergeId,
