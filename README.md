@@ -2,12 +2,12 @@
 
 OpenReason is an open-source, local-first reasoning workbench for sustained
 mathematical, theoretical-physics, and computational reasoning. The current
-repository implements **Stage 9: Literature Workspace** on the canonical
-substrate. Portable sources bind raw artifacts and extraction provenance to
-stable page/theorem anchors; local and catalog search feed exact, reviewed
-citation evidence into the verification plane without inventing truth or
-novelty verdicts. It is not yet an autonomous scientist, bundled proof kernel,
-full PDF/OCR engine, live Zotero client, publication system, or graphical
+repository implements **Stage 10: Domain Packs** on the canonical substrate.
+Pure Mathematics, Theoretical Physics, and Computational Reasoning add strict
+semantic/adapter manifests and seven project templates without coupling core to
+one engine. RP-001, RP-002, and RP-003 now pass machine-derived acceptance and
+export hashed research packages. It is not yet an autonomous scientist,
+bundled domain-engine distribution, collaborative server, or graphical
 workbench.
 
 ## Quick start
@@ -56,6 +56,12 @@ pnpm rw paper render /tmp/rw-rp001 <paper-id> --format latex
 pnpm rw literature ingest /tmp/rw-rp001 ./paper.pdf \
   --metadata-file ./metadata.json --extracted-text-file ./paper.pages.txt
 pnpm rw literature search /tmp/rw-rp001 --query "exact theorem" --anchor-kind theorem
+
+# Inspect domain packs or produce a complete reference research package.
+pnpm rw domain packs
+pnpm rw domain templates --pack pure-mathematics
+pnpm rw reference create /tmp/rw-rp002 RP-002
+pnpm rw research-package build /tmp/rw-rp002 /tmp/rw-rp002-package --reference RP-002
 ```
 
 `pnpm run check` runs the TypeScript build check, verifies that the checked-in
@@ -123,6 +129,19 @@ pnpm rw literature cite <project-dir> --claim <id> --context <id>
 pnpm rw literature novelty <project-dir> --claim <id> --context <id> [--limit <n>]
 pnpm rw literature catalog-search --query <text> --allow-network [--limit <n>]
 pnpm rw literature catalog-ingest <project-dir> --record-file <path>
+pnpm rw domain packs
+pnpm rw domain show <pack-id>
+pnpm rw domain templates [--pack <pack-id>]
+pnpm rw domain conformance <pack-id>
+pnpm rw domain authorize <project-dir> --pack <pack-id> --allow-binding <id,...>
+    [--capability <capability,...>] [--branch <id-or-name>]
+pnpm rw domain init <project-dir> --pack <pack-id> --template <template-id>
+    --title <title> [--problem <text>] [--goal <text>] [--context-file <path>]
+pnpm rw reference create <project-dir> <RP-001|RP-002|RP-003>
+pnpm rw reference evaluate <project-dir> <RP-001|RP-002|RP-003>
+    [--branch <id-or-name>]
+pnpm rw research-package build <project-dir> <destination-dir>
+    --reference <RP-001|RP-002|RP-003> [--branch <id-or-name>]
 pnpm rw graph query <project-dir> [--branch <id-or-name>]
     [--object-type <type,...>] [--edge-type <type,...>] [--context <id>]
 pnpm rw graph traverse <project-dir> --start <object-id,...>
@@ -261,6 +280,17 @@ source or anchor makes existing evidence stale. OpenAlex access is deny-by-
 default and requires `--allow-network`; novelty output always requires human
 review. See [ADR-0013](docs/architecture/adr/0013-stage-9-literature-workspace.md).
 
+Stage 10 adds strict, content-hashed Domain Pack manifests. A pack maps its
+disciplinary vocabulary onto the existing graph and declares typed tool/
+verifier bindings; registration grants no permission. Conformance checks actual
+contracts, and authorization persists an explicit binding/capability allow-list
+with exact contract digests. Seven templates create ordinary project state.
+Machine-derived RP-001/002/003 assertions gate a portable export whose
+`research-package.json` inventories the event head, pack/template, exact object
+versions, CAS artifacts, failures, and acceptance evidence. External Lean,
+Sage, GAP, PARI/GP, SMT, SymPy, Cadabra/xAct, and JAX engines remain replaceable
+deployment adapters. See [ADR-0014](docs/architecture/adr/0014-stage-10-domain-packs.md).
+
 A minimal local-compatible model declaration is:
 
 ```json
@@ -335,8 +365,9 @@ but it never becomes the only copy of project meaning.
   papers, Markdown/LaTeX rendering, verifier adapters, independent review,
   hard verification gates, portable literature ingestion, exact anchors,
   source-aware search, citation grounding, conservative novelty, semantic
-  impact and branch comparison, cleanup, verification, export, and the RP-001
-  fixture.
+  impact and branch comparison, domain-pack manifests and templates, reference
+  acceptance, research-package export, cleanup, verification, and RP-001/002/
+  003 fixtures.
 - `packages/cli` — the `rw` command-line adapter over the project service.
 - `schemas` — schema-generation notes and checked-in public Draft 2020-12
   schemas.
@@ -364,3 +395,4 @@ but it never becomes the only copy of project meaning.
 - [Stage 7 exit](docs/roadmap/stage-7-exit.md)
 - [Stage 8 exit](docs/roadmap/stage-8-exit.md)
 - [Stage 9 exit](docs/roadmap/stage-9-exit.md)
+- [Stage 10 exit](docs/roadmap/stage-10-exit.md)
