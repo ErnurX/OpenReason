@@ -1,5 +1,6 @@
 export * from "./cas.js";
 export * from "./cleanup.js";
+export * from "./collaboration.js";
 export * from "./context.js";
 export * from "./coordinator.js";
 export * from "./domain-packs.js";
