@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 
 import { handleAgentCommand } from "./commands/agent.js";
 import { handleBranchCommand } from "./commands/branch.js";
+import { handleDomainCommand } from "./commands/domain.js";
 import { handleEvidenceCommand } from "./commands/evidence.js";
 import { handleExecutionCommand } from "./commands/execution.js";
 import { handleGraphCommand } from "./commands/graph.js";
@@ -84,6 +85,19 @@ Usage:
   rw literature novelty <project-dir> --claim <id> --context <id> [--limit <n>]
   rw literature catalog-search --query <text> --allow-network [--limit <n>]
   rw literature catalog-ingest <project-dir> --record-file <path>
+  rw domain packs
+  rw domain show <pack-id>
+  rw domain templates [--pack <pack-id>]
+  rw domain conformance <pack-id>
+  rw domain authorize <project-dir> --pack <pack-id> --allow-binding <id,...>
+      [--capability <capability,...>] [--branch <id-or-name>]
+  rw domain init <project-dir> --pack <pack-id> --template <template-id>
+      --title <title> [--problem <text>] [--goal <text>] [--context-file <path>]
+  rw reference create <project-dir> <RP-001|RP-002|RP-003>
+  rw reference evaluate <project-dir> <RP-001|RP-002|RP-003>
+      [--branch <id-or-name>]
+  rw research-package build <project-dir> <destination-dir>
+      --reference <RP-001|RP-002|RP-003> [--branch <id-or-name>]
   rw history <project-dir>
   rw graph query <project-dir> [--branch <id-or-name>]
       [--object-type <type,...>] [--edge-type <type,...>] [--context <id>]
@@ -152,6 +166,7 @@ export async function runCli(
 
   const handlers = [
     handleProjectCommand,
+    handleDomainCommand,
     handleBranchCommand,
     handleObjectsCommand,
     handleEvidenceCommand,
